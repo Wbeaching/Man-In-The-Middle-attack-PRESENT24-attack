@@ -8,7 +8,7 @@ FILES = src/*.c
 all: present24
 
 present24: $(FILES)
-	$(CC) $(CFLAGS) $(OFLAGS) $? -o $@
+	$(CC) $(CFLAGS) $(OFLAGS) $(FILES) -o $@
 
 clean:
 	@rm -Rf present24
