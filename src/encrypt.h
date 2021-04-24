@@ -2,5 +2,4 @@
 
 #include "types.h"
 
-void generate_round_keys(u64 master_key, u32 keys[11]);
-u32 PRESENT24_encrypt(u32 message, u32 key[11]);
+u8 *PRESENT24_encrypt(u8 message[3], u8 subkeys[11][3]);
