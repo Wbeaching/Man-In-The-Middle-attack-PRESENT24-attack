@@ -6,51 +6,30 @@
 #include "encrypt.h"
 
 int main(int argc, char **argv) {
-    if (argc < 3) {
-        return printf("Usage: %s -[e | d] TEST_VECTOR\n", argv[0]), 1;
-    }
-
-    static const u8 master_key[3][10] = {
-        { 0x00, 0x00, 0x00 },
-        { 0xff, 0xff, 0xff },
-        { 0xd1, 0xbd, 0x2d }
-    };
-
-    u8 clear_text[3][3] = {
-        { 0x00, 0x00, 0x00 },
-        { 0x00, 0x00, 0x00 },
-        { 0xf9, 0x55, 0xb9 }
-    };
-
-    u32 vector = atoi(argv[2]);
-    if (vector > 2) {
-        printf("Test vector must be between 0 and 2\n");
-        return printf("Usage: %s -[e | d] KEY TEST_VECTOR\n", argv[0]), 1;
-
+    if (argc < 2) {
+        return printf("Usage: %s -[e | d]\n", argv[0]), 1;
     }
 
     if (!strcmp(argv[1], "-e")) {
         u8 subkeys[11][3];
 
         u8 key[10] = {
-            0x00, 0x00, 0x00, 0x00, 0x00, 
+            0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00
         };
 
         generate_round_keys(key, subkeys);
-        
-        u8 message2[3] = {
-            0x00, 0x00, 0x00
-        };
 
-        u8 *message = PRESENT24_encrypt(message2, subkeys);
+        u8 clear_text[3] = { 0x00, 0x00, 0x00 };
+        printf("Clear:  %X%X%X\n\n", clear_text[0], clear_text[1], clear_text[2]);
 
-        printf("message : %X%X%X\n", message[0], message[1], message[2]);
+        u8 *cipher_text = PRESENT24_encrypt(clear_text, subkeys);
+        printf("\nCipher: %X%X%X\n", cipher_text[0], cipher_text[1], cipher_text[2]);
 
     } else if (!strcmp(argv[1], "-d")) {
         printf("Unimplemented!\n");
     } else {
-        return printf("Usage: %s -[e | d] KEY\n", argv[0]), 1;
+        return printf("Usage: %s -[e | d]\n", argv[0]), 1;
     }
 
     return 0;

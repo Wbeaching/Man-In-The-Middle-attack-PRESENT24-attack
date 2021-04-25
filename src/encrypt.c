@@ -1,8 +1,16 @@
 #include "types.h"
 #include "encrypt.h"
+#include <stdio.h>
 #include <string.h>
 
 #define ROTATE(value, n) (((value) >> (n)) | ((value) << (24 - n)))
+
+void print_bin(u8 c) {
+	for (u8 i = 7; i != 0; i--) {
+    	printf("%d", (c >> i) & 0x01 ? 1 : 0);
+	}
+	printf("\n");
+}
 
 u8 sbox_layer(u8 byte) {
     static const u8 sbox[16] = {
@@ -15,40 +23,37 @@ u8 sbox_layer(u8 byte) {
     return (sbox[((byte & 0xF0) >> 4)] << 4) | (sbox[byte & 0x0F]);
 }
 
-void print_bin(unsigned char c) {
-	for( int i = 7; i >= 0; i-- ) {
-    	printf( "%d", ( c >> i ) & 1 ? 1 : 0 );
-	}
-
-	printf("\n");
-}
-
-void generate_round_keys(u8 master_key[10], u8 keys[11][3]) {
-    u8 tab_shift_61[10];
+void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
+    u8 shifted_reg[10];
 
     for (u8 i = 0; i < 11; i++) {
-        keys[i][0] = master_key[5];
-        keys[i][1] = master_key[6];
-        keys[i][2] = master_key[7];
+        // Update the round key
+        round_key[i][0] = key_reg[5];
+        round_key[i][1] = key_reg[6];
+        round_key[i][2] = key_reg[7];
 
-        tab_shift_61[0] = master_key[7] << 5 | master_key[8] >> 3;
-        tab_shift_61[1] = master_key[8] << 5 | master_key[9] >> 3;
-        tab_shift_61[2] = master_key[9] << 5 | master_key[0] >> 3;
-        tab_shift_61[3] = master_key[0] << 5 | master_key[1] >> 3;
-        tab_shift_61[4] = master_key[1] << 5 | master_key[2] >> 3;
-        tab_shift_61[5] = master_key[2] << 5 | master_key[3] >> 3;
-        tab_shift_61[6] = master_key[3] << 5 | master_key[4] >> 3;
-        tab_shift_61[7] = master_key[4] << 5 | master_key[5] >> 3;
-        tab_shift_61[8] = master_key[5] << 5 | master_key[6] >> 3;
-        tab_shift_61[9] = master_key[6] << 5 | master_key[7] >> 3;  
+        // Shift the key register by 61 to the left
+        shifted_reg[0] = key_reg[7] << 5 | key_reg[8] >> 3;
+        shifted_reg[1] = key_reg[8] << 5 | key_reg[9] >> 3;
+        shifted_reg[2] = key_reg[9] << 5 | key_reg[0] >> 3;
+        shifted_reg[3] = key_reg[0] << 5 | key_reg[1] >> 3;
+        shifted_reg[4] = key_reg[1] << 5 | key_reg[2] >> 3;
+        shifted_reg[5] = key_reg[2] << 5 | key_reg[3] >> 3;
+        shifted_reg[6] = key_reg[3] << 5 | key_reg[4] >> 3;
+        shifted_reg[7] = key_reg[4] << 5 | key_reg[5] >> 3;
+        shifted_reg[8] = key_reg[5] << 5 | key_reg[6] >> 3;
+        shifted_reg[9] = key_reg[6] << 5 | key_reg[7] >> 3;
 
-        tab_shift_61[0] = (sbox_layer(tab_shift_61[0]) & 0xf0) | (tab_shift_61[0] & 0x0f);
+        // First 4 high-order bits of the key register through the SBox
+        shifted_reg[0] = (sbox_layer(shifted_reg[0]) & 0xF0) | (shifted_reg[0] & 0x0F);
 
-        tab_shift_61[7] ^= (i+1) >> 1;
-        tab_shift_61[8] ^= (i+1) << 7;
+        // XOR bits 19 to 15 with round counter
+        shifted_reg[7] ^= (i + 1) >> 1;
+        shifted_reg[8] ^= (i + 1) << 7;
 
+        // Copy the temporarily shifted key register to the original
         for (int j = 0; j < 10; j++) {
-            master_key[j] = tab_shift_61[j];
+            key_reg[j] = shifted_reg[j];
         }
     }
 }
@@ -66,17 +71,6 @@ u8 pbox_layer(u8 message) {
 }
 */
 
-u8 *compress_to_byte(u8 *message) {
-    u8 compressed[3];
-
-    for (u8 i = 0, j = 0; i < 24; i++) {
-        compressed[j] |= message[i] << (i%8);
-        j += ((i % 8) && (i > 7)) ? 1 : 0;
-    }
-
-    return compressed;
-}
-
 u8 *pbox_layer(u8 message[3]) {
     static const u8 pbox[24] = {
         0, 6,  12, 18,
@@ -88,21 +82,17 @@ u8 *pbox_layer(u8 message[3]) {
     };
 
     u8 tmp_message[24];
+    // Translate 3 bytes array to 24 bytes array containing 1 bit each
     for (u8 i = 0, j = 0; i < 24; i++) {
-        tmp_message[i] = (message[j] >> (i % 8)) & 0x01;
+        tmp_message[pbox[i]] = (message[j] >> (i % 8)) & 0x01;
         j += ((i % 8) && (i > 7)) ? 1 : 0;
     }
 
-    u8 tmp_message2[24];
-    for (u8 i = 0; i < 24; i++) {
-        tmp_message2[i] = tmp_message[pbox[i]];
+    // Recompress the 24 bytes back into a 3 bytes array
+    for (u8 i = 0, j = 0; i < 24; i++) {
+        message[j] |= tmp_message[i] << (i % 8);
+        j += ((i % 8) && (i > 7)) ? 1 : 0;
     }
-
-    // for (u8 i = 0; i < 3; i++) {
-    //     message[i] = compress_to_byte(tmp_message2, i);
-    // }
-
-    message = compress_to_byte(tmp_message2);
 
     return message;
 }
@@ -121,9 +111,9 @@ u8 *PRESENT24_encrypt(u8 message[3], u8 subkeys[11][3]) {
         }
 
         // PBox layer
-        *message = pbox_layer(message);
-        
-        printf("etat %X%X%X\n", message[0], message[1], message[2]);
+        message = pbox_layer(message);
+
+        printf("State:  %X%X%X\n", message[0], message[1], message[2]);
     }
 
 
