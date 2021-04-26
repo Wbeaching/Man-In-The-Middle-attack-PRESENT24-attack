@@ -1,5 +1,6 @@
 # Directories to ignore
 docs/
+.vscode/
 
 # Files to ignore
 project.pdf
