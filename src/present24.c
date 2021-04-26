@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        return printf("Usage: %s -[e | d]\n", argv[0]), 1;
+        return printf("Usage: %s -[e | d | a]\n", argv[0]), 1;
     }
 
     if (!strcmp(argv[1], "-e")) {
@@ -43,8 +43,10 @@ int main(int argc, char **argv) {
         u8 *clear_text = PRESENT24_decrypt(cipher_text, subkeys);
         printf("\nClear: %x%x%x\n", clear_text[0], clear_text[1], clear_text[2]);
 
+    } else if (!strcmp(argv[1], "-a")) {
+        printf("Unimplemented!\n");
     } else {
-        return printf("Usage: %s -[e | d]\n", argv[0]), 1;
+        return printf("Usage: %s -[e | d | a]\n", argv[0]), 1;
     }
 
     return 0;
