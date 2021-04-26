@@ -14,17 +14,17 @@ int main(int argc, char **argv) {
         u8 subkeys[11][3];
 
         u8 key[10] = {
-            0x00, 0x00, 0x00, 0x00, 0x00,
+            0xD1, 0xBD, 0x2D, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00
         };
 
         generate_round_keys(key, subkeys);
 
-        u8 clear_text[3] = { 0x00, 0x00, 0x00 };
-        printf("Clear:  %X%X%X\n\n", clear_text[0], clear_text[1], clear_text[2]);
+        u8 clear_text[3] = { 0xF9, 0x55, 0xB9 };
+        printf("Clear:  %x%x%x\n\n", clear_text[0], clear_text[1], clear_text[2]);
 
         u8 *cipher_text = PRESENT24_encrypt(clear_text, subkeys);
-        printf("\nCipher: %X%X%X\n", cipher_text[0], cipher_text[1], cipher_text[2]);
+        printf("\nCipher: %x%x%x\n", cipher_text[0], cipher_text[1], cipher_text[2]);
 
     } else if (!strcmp(argv[1], "-d")) {
         printf("Unimplemented!\n");

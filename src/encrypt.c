@@ -6,10 +6,10 @@
 #define ROTATE(value, n) (((value) >> (n)) | ((value) << (24 - n)))
 
 void print_bin(u8 c) {
-	for (u8 i = 7; i != 0; i--) {
-    	printf("%d", (c >> i) & 0x01 ? 1 : 0);
-	}
-	printf("\n");
+    for (i32 i = 7; i >= 0; i--) {
+        printf("%d", (c >> i) & 0x01 ? 1 : 0);
+    }
+    printf("\n");
 }
 
 u8 sbox_layer(u8 byte) {
@@ -60,7 +60,7 @@ void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
 
 /*
 u8 pbox_layer(u8 message) {
-    u32 r = 0x120C0600;
+    u32 r = 0x0C0600;
 
     for (u8 j = 0; j < 24; j++) {
         message |= ((message >> j) & 0x01) << (r & 0xFF);
@@ -84,25 +84,30 @@ u8 *pbox_layer(u8 message[3]) {
     u8 tmp_message[24];
     // Translate 3 bytes array to 24 bytes array containing 1 bit each
     for (u8 i = 0, j = 0; i < 24; i++) {
-        tmp_message[pbox[i]] = (message[j] >> (i % 8)) & 0x01;
-        j += ((i % 8) && (i > 7)) ? 1 : 0;
+        j += (((i & 7) == 0) && (i > 0));
+        tmp_message[pbox[i]] = (message[j] << (i & 7)) & 0x80;
     }
 
     // Recompress the 24 bytes back into a 3 bytes array
+    u8 compressed[3] = { 0x00, 0x00, 0x00 };
     for (u8 i = 0, j = 0; i < 24; i++) {
-        message[j] |= tmp_message[i] << (i % 8);
-        j += ((i % 8) && (i > 7)) ? 1 : 0;
+        j += (((i & 7) == 0) && (i > 0));
+        compressed[j] |= tmp_message[i] >> (i & 7);
+    }
+
+    for (u8 i = 0; i < 3; i++) {
+        message[i] = compressed[i];
     }
 
     return message;
 }
 
-u8 *PRESENT24_encrypt(u8 message[3], u8 subkeys[11][3]) {
+u8 *PRESENT24_encrypt(u8 message[3], u8 round_key[11][3]) {
     // 11 rounds of the cipher
     for (u8 i = 0; i < 10; i++) {
         // XOR key with message
         for (u8 j = 0; j < 3; j++) {
-            message[j] ^= subkeys[i][j];
+            message[j] ^= round_key[i][j];
         }
 
         // SBox layer
@@ -113,15 +118,13 @@ u8 *PRESENT24_encrypt(u8 message[3], u8 subkeys[11][3]) {
         // PBox layer
         message = pbox_layer(message);
 
-        printf("State:  %X%X%X\n", message[0], message[1], message[2]);
+        printf("State:  %x%x%x\n", message[0], message[1], message[2]);
     }
-
 
     // XOR with key11
     for (u8 i = 0; i < 3; i++) {
-        message[i] ^= subkeys[10][i];
+        message[i] ^= round_key[10][i];
     }
-
 
     // return cipher
     return message;
