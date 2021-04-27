@@ -10,6 +10,76 @@
 
 typedef void *(*func_ptr)(void *arg);
 
+void swap(u64 *x, u64 *y)
+{
+    u64 tmp = *x;
+    *x = *y;
+    *y = tmp;
+}
+
+//
+u64 partition(u64 *arr, i64 low, i64 high)
+{
+    u64 pivot = arr[high] & 0x0000000000ffffff;
+    i64 i = (low - 1);
+
+    for (i64 j = low; j < high; j++)
+    {
+        if ((arr[j] & 0x0000000000ffffff) < pivot)
+        {
+            i++;
+            swap(&arr[i], &arr[j]);
+        }
+    }
+    swap(&arr[i + 1], &arr[high]);
+
+    return (i + 1);
+}
+
+//
+void quick_sort(u64 *arr, i64 low, i64 high)
+{
+    if (arr)
+    {
+        if (low < high)
+        {
+            u64 part_index = partition(arr, low, high);
+            quick_sort(arr, low, part_index - 1);
+            quick_sort(arr, part_index + 1, high);
+        }
+    }
+    else
+    {
+        printf("Error: arr_t pointer is already NULL\n");
+    }
+}
+
+i64 binary_search(u64 *arr, i64 low, i64 high, u64 target) {
+    if (high >= low) {
+        i64 mid = low + (high - low) / 2;
+
+        // If the element is present at the middle
+        // itself
+        if ((arr[mid] & 0x0000000000ffffff) == (target & 0x0000000000ffffff)) {
+            return mid;
+        }
+
+        // If element is smaller than mid, then
+        // it can only be present in left subarray
+        if ((arr[mid] & 0x0000000000ffffff) > (target & 0x0000000000ffffff)) {
+            return binary_search(arr, low, mid - 1, target);
+        }
+
+        // Else the element can only be present
+        // in right subarray
+        return binary_search(arr, mid + 1, high, target);
+    }
+
+    // We reach here when element is not
+    // present in array
+    return -1;
+}
+
 void *generate_clear_cipher(void *arg) {
     u8 round_key[11][3];
     u8 key_reg[10] = {
@@ -71,11 +141,21 @@ u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3]) {
                 pthread_join(tid[i], NULL);
             }
 
+            quick_sort(clears, 0, (pow(2, 24) - 2));
+
+            for (u64 i = 0; i < (pow(2, 24) - 1); i++) {
+                i64 index = binary_search(clears, 0, pow(2, 24) - 1, ciphers[i]);
+            }
+
             free(clears);
             free(ciphers);
             free(msg);
             free(tid);
+        } else {
+            return printf("ERROR: cannot allocate memory for arrays\n"), NULL;
         }
+    } else {
+        return printf("ERROR: cannot allocate memory for threads\n"), NULL;
     }
 
 /*
