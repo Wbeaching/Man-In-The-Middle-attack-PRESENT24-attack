@@ -66,7 +66,7 @@ u8 *PRESENT24_decrypt(u8 message[3], u8 round_key[11][3]) {
             message[j] ^= round_key[i - 1][j];
         }
 
-        printf("State:  %x%x%x\n", message[0], message[1], message[2]);
+        // printf("State:  %x%x%x\n", message[0], message[1], message[2]);
     }
 
     // return clear text

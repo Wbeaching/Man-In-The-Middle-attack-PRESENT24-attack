@@ -44,8 +44,8 @@ int main(int argc, char **argv) {
         u8 *clear_text = PRESENT24_decrypt(cipher_text, subkeys);
         printf("\nClear: %x%x%x\n", clear_text[0], clear_text[1], clear_text[2]);
     } else if (!strcmp(argv[1], "-a")) {
-        u8 clear_text[3] = { 0xF9, 0x55, 0xB9 };
-        u8 cipher_text[3] = { 0x47, 0xA9, 0x29 };
+        u8 clear_text[3] = { 0xce, 0x15, 0x7a };
+        u8 cipher_text[3] = { 0x0e, 0xd3, 0xf0 };
         PRESENT24_attack(clear_text, cipher_text);
     } else {
         return printf("Usage: %s -[e | d | a]\n", argv[0]), 1;

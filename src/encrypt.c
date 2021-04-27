@@ -74,7 +74,7 @@ u8 *PRESENT24_encrypt(u8 message[3], u8 round_key[11][3]) {
         // PBox layer
         message = pbox_layer_encrypt(message);
 
-        printf("State:  %x%x%x\n", message[0], message[1], message[2]);
+        //printf("State:  %x%x%x\n", message[0], message[1], message[2]);
     }
 
     // XOR with key11
