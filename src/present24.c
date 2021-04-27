@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "types.h"
+#include "common.h"
 #include "encrypt.h"
 #include "decrypt.h"
 
@@ -26,7 +27,6 @@ int main(int argc, char **argv) {
 
         u8 *cipher_text = PRESENT24_encrypt(clear_text, subkeys);
         printf("\nCipher: %x%x%x\n", cipher_text[0], cipher_text[1], cipher_text[2]);
-
     } else if (!strcmp(argv[1], "-d")) {
         u8 subkeys[11][3];
 
@@ -42,7 +42,6 @@ int main(int argc, char **argv) {
 
         u8 *clear_text = PRESENT24_decrypt(cipher_text, subkeys);
         printf("\nClear: %x%x%x\n", clear_text[0], clear_text[1], clear_text[2]);
-
     } else if (!strcmp(argv[1], "-a")) {
         printf("Unimplemented!\n");
     } else {
