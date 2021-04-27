@@ -1,6 +1,6 @@
 # Macros
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3 -pthread
 OFLAGS = -Ofast
 FILES = src/*.c
 AR = present24_encrypt
