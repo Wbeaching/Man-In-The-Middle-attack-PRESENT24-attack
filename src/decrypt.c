@@ -52,7 +52,7 @@ u8 *PRESENT24_decrypt(u8 message[3], u8 round_key[11][3]) {
     }
 
     // 11 rounds of the clear
-    for (i8 i = 9; i > -1; i--) {
+    for (u8 i = 10; i > 0; i--) {
         // PBox layer
         message = pbox_layer_decrypt(message);
 
@@ -63,7 +63,7 @@ u8 *PRESENT24_decrypt(u8 message[3], u8 round_key[11][3]) {
 
         // XOR key with message
         for (u8 j = 0; j < 3; j++) {
-            message[j] ^= round_key[i][j];
+            message[j] ^= round_key[i - 1][j];
         }
 
         printf("State:  %x%x%x\n", message[0], message[1], message[2]);
