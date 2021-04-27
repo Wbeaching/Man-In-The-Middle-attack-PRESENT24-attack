@@ -1,14 +1,7 @@
-#include "types.h"
-#include "decrypt.h"
 #include <stdio.h>
 #include <string.h>
 
-void print_bin_decrypt(u8 c) {
-    for (i32 i = 7; i >= 0; i--) {
-        printf("%d", (c >> i) & 0x01 ? 1 : 0);
-    }
-    printf("\n");
-}
+#include "decrypt.h"
 
 u8 sbox_layer_decrypt(u8 byte) {
     static const u8 sbox[16] = {
@@ -24,10 +17,10 @@ u8 sbox_layer_decrypt(u8 byte) {
 u8 *pbox_layer_decrypt(u8 message[3]) {
     static const u8 pbox[24] = {
         0,  4,  8,  12,
-        16, 20, 1,  5, 
-        9,  13, 17, 21, 
-        2,  6,  10, 14, 
-        18, 22, 3,  7, 
+        16, 20, 1,  5,
+        9,  13, 17, 21,
+        2,  6,  10, 14,
+        18, 22, 3,  7,
         11, 15, 19, 23
     };
 
@@ -59,7 +52,7 @@ u8 *PRESENT24_decrypt(u8 message[3], u8 round_key[11][3]) {
     }
 
     // 11 rounds of the clear
-    for (i32 i = 9; i > -1; i--) {
+    for (i8 i = 9; i > -1; i--) {
         // PBox layer
         message = pbox_layer_decrypt(message);
 
