@@ -11,4 +11,4 @@ typedef struct {
     u32 end;
 } message_t;
 
-u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3]);
+u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3], u8 clear_text2[3], u8 cipher_text2[3]);
