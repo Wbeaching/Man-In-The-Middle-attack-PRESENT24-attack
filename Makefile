@@ -1,7 +1,7 @@
 # Macros
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3 -pthread
-OFLAGS = -Ofast
+OFLAGS = -O3 -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions -funsafe-math-optimizations
 FILES = src/*.c
 AR = present24_encrypt
 
