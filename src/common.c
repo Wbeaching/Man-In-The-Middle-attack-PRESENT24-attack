@@ -1,7 +1,30 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "common.h"
 #include "encrypt.h"
+
+i32 verify_args(i8 *arg){
+    if (strlen(arg) > 7) {
+        printf("ERR : invalide size for %s\n", arg);
+        return -1;
+    }
+    else {
+        for (u32 i = 0; i < strlen(arg); i++) {
+            if ((arg[i] > 47 && arg[i] < 58) || 
+                (arg[i] > 64 && arg[i] < 71) ||
+                (arg[i] > 96 && arg[i] < 103)) {
+                    return 0;
+            }
+            else  {
+                printf("ERR : invalide char : %c for : %s\n",arg[i], arg);
+                return -1;
+            }           
+        }
+    }
+
+    return 0;
+}
 
 void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
     u8 shifted_reg[10];
