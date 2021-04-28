@@ -10,40 +10,70 @@
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        return printf("Usage: %s -[e | d | a]\n", argv[0]), 1;
+        return printf("Usage: %s -[e | d | a | h]\n", argv[0]), 1;
     }
 
     if (!strcmp(argv[1], "-e")) {
-        u8 subkeys[11][3];
+        if (argc == 4) {
+            i32 a2 = strtol(argv[2], NULL, 16);
+            i32 a3 = strtol(argv[3], NULL, 16);
 
-        u8 key[10] = {
-            0xD1, 0xBD, 0x2D, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00
-        };
+            u8 m[3] = {
+                (a2 & 0x00ff0000) >> 16,
+                (a2 & 0x0000ff00) >> 8,
+                (a2 & 0x000000ff)
+            };
 
-        generate_round_keys(key, subkeys);
+            u8 k_reg[10] = {
+                (a3 & 0x00ff0000) >> 16,
+                (a3 & 0x0000ff00) >> 8,
+                (a3 & 0x000000ff), 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00
+            };
+            u8 rk[11][3];
 
-        u8 clear_text[3] = { 0xF9, 0x55, 0xB9 };
-        printf("Clear:  %x%x%x\n\n", clear_text[0], clear_text[1], clear_text[2]);
+            printf("Starting PRESENT24 encryption with:\n");
+            printf("\tMessage: %02x%02x%02x\n", m[0], m[1], m[2]);
+            printf("\tKey:\t %02x%02x%02x\n", k_reg[0], k_reg[1], k_reg[2]);
 
-        u8 *cipher_text = PRESENT24_encrypt(clear_text, subkeys);
-        printf("\nCipher: %x%x%x\n", cipher_text[0], cipher_text[1], cipher_text[2]);
+            generate_round_keys(k_reg, rk);
+            u8 *c = PRESENT24_encrypt(m, rk);
+            printf("\nOutput cipher:\t %02x%02x%02x\n", c[0], c[1], c[2]);
+        }
+        else {
+            return printf("Usage: %s -e MESSAGE KEY\n", argv[0]), 1;
+        }
     }
     else if (!strcmp(argv[1], "-d")) {
-        u8 subkeys[11][3];
+        if (argc == 4) {
+            i32 a2 = strtol(argv[2], NULL, 16);
+            i32 a3 = strtol(argv[3], NULL, 16);
 
-        u8 key[10] = {
-            0xD1, 0xBD, 0x2D, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00
-        };
+            u8 c[3] = {
+                (a2 & 0x00ff0000) >> 16,
+                (a2 & 0x0000ff00) >> 8,
+                (a2 & 0x000000ff)
+            };
 
-        generate_round_keys(key, subkeys);
+            u8 k_reg[10] = {
+                (a3 & 0x00ff0000) >> 16,
+                (a3 & 0x0000ff00) >> 8,
+                (a3 & 0x000000ff), 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00
+            };
+            u8 rk[11][3];
 
-        u8 cipher_text[3] = { 0x47, 0xA9, 0x29 };
-        printf("Cipher: %x%x%x\n\n", cipher_text[0], cipher_text[1], cipher_text[2]);
+            printf("Starting PRESENT24 decryption with:\n");
+            printf("\tCipher:  %02x%02x%02x\n", c[0], c[1], c[2]);
+            printf("\tKey:\t %02x%02x%02x\n", k_reg[0], k_reg[1], k_reg[2]);
 
-        u8 *clear_text = PRESENT24_decrypt(cipher_text, subkeys);
-        printf("\nClear: %x%x%x\n", clear_text[0], clear_text[1], clear_text[2]);
+            generate_round_keys(k_reg, rk);
+            u8 *m = PRESENT24_encrypt(c, rk);
+            printf("\nOutput message:\t %02x%02x%02x\n", m[0], m[1], m[2]);
+        }
+        else {
+            return printf("Usage: %s -d CIPHER KEY\n", argv[0]), 1;
+        }
     }
     else if (!strcmp(argv[1], "-a")) {
         if (argc == 6) {
