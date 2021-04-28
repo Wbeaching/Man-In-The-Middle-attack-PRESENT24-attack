@@ -5,3 +5,5 @@ docs/
 # Files to ignore
 project.pdf
 present24
+gmon.out
+config.lua
