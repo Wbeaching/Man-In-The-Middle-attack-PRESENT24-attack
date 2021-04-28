@@ -44,11 +44,11 @@ int main(int argc, char **argv) {
         u8 *clear_text = PRESENT24_decrypt(cipher_text, subkeys);
         printf("\nClear: %x%x%x\n", clear_text[0], clear_text[1], clear_text[2]);
     } else if (!strcmp(argv[1], "-a")) {
-        u8 clear_text1[3] = { 0x86, 0x0d, 0x7c };
-        u8 cipher_text1[3] = { 0x26, 0x30, 0x97 };
+        u8 clear_text1[3] = { 0xb4, 0x04, 0xcc };
+        u8 cipher_text1[3] = { 0x23, 0x71, 0x4f };
 
-        u8 clear_text2[3] = { 0xb9, 0x6e, 0x60 };
-        u8 cipher_text2[3] = { 0x6f, 0x57, 0x46 };
+        u8 clear_text2[3] = { 0x57, 0x6d, 0xcf };
+        u8 cipher_text2[3] = { 0x45, 0x05, 0x1b };
 
         PRESENT24_attack(clear_text1, cipher_text1, clear_text2, cipher_text2);
     } else {

@@ -8,7 +8,8 @@
 #include "decrypt.h"
 #include "attack.h"
 
-typedef void *(*func_ptr)(void *arg);
+typedef void *(*generate_ptr)(void *arg);
+typedef void *(*research_ptr)(void *arg);
 
 void swap(u64 *x, u64 *y) {
     u64 tmp = *x;
@@ -112,6 +113,19 @@ i64 binary_search(u64 *arr, i64 low, i64 high, u64 target, u8 clear_text2[3], u8
     return -1;
 }
 
+void *research_valid_key(void *arg) {
+    research_t *msg = (research_t *)arg;
+
+    for (i64 i = msg->start; i < msg->end; i++) {
+        i64 index = binary_search(msg->sorted, msg->start, msg->end, msg->unsorted[i], msg->clear_text, msg->cipher_text);
+
+        if (index != -1) {
+            valid_key(msg->unsorted[i], msg->sorted[index], msg->clear_text, msg->cipher_text);
+        }
+    }
+    return NULL;
+}
+
 void *generate_clear_cipher(void *arg) {
     u8 round_key[11][3];
     u8 key_reg[10] = {
@@ -119,7 +133,7 @@ void *generate_clear_cipher(void *arg) {
         0, 0, 0, 0, 0
     };
 
-    message_t *msg = (message_t*)arg;
+    generate_t *msg = (generate_t*)arg;
 
     for (u32 i = msg->start; i < msg->end; i++) {
         key_reg[0] = (i & 0xff0000) >> 16;
@@ -157,50 +171,58 @@ void *generate_clear_cipher(void *arg) {
 u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3], u8 clear_text2[3], u8 cipher_text2[3]) {
     u8 threads = 8;
     pthread_t *tid = malloc(sizeof(pthread_t) * threads);
-    message_t *msg = malloc(sizeof(message_t) * threads);
-    func_ptr thread_func = generate_clear_cipher;
+    generate_t *msg = malloc(sizeof(generate_t) * threads);
+    generate_ptr thread_func = generate_clear_cipher;
 
-    if (tid && msg) {
-        u64 *clears = malloc(sizeof(u64) * pow(2, 24));
-        u64 *ciphers = malloc(sizeof(u64) * pow(2, 24));
+    u64 *clears = malloc(sizeof(u64) * pow(2, 24));
+    u64 *ciphers = malloc(sizeof(u64) * pow(2, 24));
 
-        if (clears && ciphers) {
-            for (u8 i = 0; i < threads; i++) {
-                msg[i].clears = clears;
-                msg[i].ciphers = ciphers;
-                for (u8 j = 0; j < 3; j++) {
-                    msg[i].cipher_text[j] = cipher_text[j];
-                    msg[i].clear_text[j] = clear_text[j];
-                }
-                msg[i].start = i * (pow(2, 24) / threads);
-                msg[i].end = (i + 1) * (pow(2, 24) / threads);
-                pthread_create(tid + i, NULL, thread_func, msg + i);
-            }
-
-            for (u8 i = 0; i < threads; i++) {
-                pthread_join(tid[i], NULL);
-            }
-
-            quick_sort(clears, 0, (pow(2, 24) - 1));
-
-            for (u64 i = 0; i < pow(2, 24); i++) {
-                i64 index = binary_search(clears, 0, (pow(2, 24) - 1), ciphers[i], clear_text2, cipher_text2);
-
-                if (index != -1) {
-                    valid_key(ciphers[i], clears[index], clear_text2, cipher_text2);
-                }
-            }
-
-            free(clears);
-            free(ciphers);
-            free(msg);
-            free(tid);
-        } else {
-            return printf("ERROR: cannot allocate memory for arrays\n"), NULL;
+    for (u8 i = 0; i < threads; i++) {
+        msg[i].clears = clears;
+        msg[i].ciphers = ciphers;
+        for (u8 j = 0; j < 3; j++) {
+            msg[i].clear_text[j] = clear_text[j];
+            msg[i].cipher_text[j] = cipher_text[j];
         }
-    } else {
-        return printf("ERROR: cannot allocate memory for threads\n"), NULL;
+        msg[i].start = i * (pow(2, 24) / threads);
+        msg[i].end = (i + 1) * (pow(2, 24) / threads);
+        pthread_create(tid + i, NULL, thread_func, msg + i);
     }
+
+    for (u8 i = 0; i < threads; i++) {
+        pthread_join(tid[i], NULL);
+    }
+
+    free(msg);
+    free(tid);
+
+    quick_sort(clears, 0, (pow(2, 24) - 1));
+
+    pthread_t *tid2 = malloc(sizeof(pthread_t) * threads);
+    research_t *msg2 = malloc(sizeof(research_t) * threads);
+    research_ptr thread_func2 = research_valid_key;
+
+    for (u8 i = 0; i < threads; i++) {
+        msg2[i].start = i * (pow(2, 24) / threads);
+        msg2[i].end = (i + 1) * (pow(2, 24) / threads);
+        msg2[i].sorted = clears;
+        msg2[i].unsorted = ciphers;
+        for (u8 j = 0; j < 3; j++) {
+            msg2[i].clear_text[j] = clear_text2[j];
+            msg2[i].cipher_text[j] = cipher_text2[j];
+        }
+        pthread_create(tid2 + i, NULL, thread_func2, msg2 + i);
+    }
+
+    for (u8 i = 0; i < threads; i++) {
+        pthread_join(tid2[i], NULL);
+    }
+
+    free(msg2);
+    free(tid2);
+
+    free(clears);
+    free(ciphers);
 
     return clear_text;
 }
