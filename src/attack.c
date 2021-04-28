@@ -54,6 +54,40 @@ void quick_sort(u64 *arr, i64 low, i64 high)
     }
 }
 
+// void calcul_m2_c2(int indice, u8 clear_text2[3], u8 cipher_text2[3], ciphers, clears){
+//     k1[0] = (ciphers[indice] & 0x0000FFFFFF000000) >> 40;
+//     k1[1] = (ciphers[indice] & 0x0000FFFFFF000000) >> 32;
+//     k1[2] = (ciphers[indice] & 0x0000FFFFFF000000) >> 24;
+
+//     k2[0] = (clears[indice] & 0x0000FFFFFF000000) >> 40;
+//     k2[1] = (clears[indice] & 0x0000FFFFFF000000) >> 32;
+//     k2[2] = (clears[index] & 0x0000FFFFFF000000) >> 24;
+
+//     generate_round_keys(k1, round_key1);
+//     generate_round_keys(k2, round_key2);
+
+//     u8 *result1 = PRESENT24_encrypt(clear_text2, round_key1);
+//     u8 *result2 = PRESENT24_encrypt(result1, round_key2);
+    
+//     if ((result2[0] == cipher_text2[0]) && (result2[1] == cipher_text2[1]) && (result2[2] == cipher_text2[2])) {
+//         printf("K1: %x%x%x\nK2: %x%x%x\n\n", k1[0], k1[1], k1[2], k2[0], k2[1], k2[2]);
+//     }
+// }
+
+// void nouvelle_recherche(u64 *tab_chiffre_clef, int indice, unsigned int k2, unsigned int m2, unsigned int c2){
+//     unsigned int recherche = tab_chiffre_clef[indice] & 0x0000000000ffffff;
+//     int gauche = indice - 1;
+//     int droite = indice + 1;
+//     while(gauche>0 && tab_chiffre_clef[gauche] & 0x0000000000ffffff == recherche){
+//         calcul_m2_c2(tab_chiffre_clef[gauche] & 0x0000ffffff000000, k2, m2, c2);
+//         gauche--;
+//     }
+//     while(droite<pow(2, 24) && tab_chiffre_clef[droite] & 0x0000000000ffffff == recherche){
+//         calcul_m2_c2(tab_chiffre_clef[droite] & 0x0000ffffff000000, k2, m2, c2);
+//         droite++;
+//     }
+// }
+
 i64 binary_search(u64 *arr, i64 low, i64 high, u64 target) {
     if (high >= low) {
         i64 mid = low + (high - low) / 2;
@@ -80,6 +114,32 @@ i64 binary_search(u64 *arr, i64 low, i64 high, u64 target) {
     return -1;
 }
 
+// i64 binary_search(u64 *arr, i64 low, i64 high, u64 target) {
+//     if (high >= low) {
+//         i64 mid = low + (high - low) / 2;
+
+//         // If the element is present at the middle
+//         // itself
+//         if ((arr[mid] & 0x0000000000ffffff) == (target & 0x0000000000ffffff)) {
+//             return mid;
+//         }
+
+//         // If element is smaller than mid, then
+//         // it can only be present in left subarray
+//         if ((arr[mid] & 0x0000000000ffffff) > (target & 0x0000000000ffffff)) {
+//             return binary_search(arr, low, mid - 1, target);
+//         }
+
+//         // Else the element can only be present
+//         // in right subarray
+//         return binary_search(arr, mid + 1, high, target);
+//     }
+
+//     // We reach here when element is not
+//     // present in array
+//     return -1;
+// }
+
 void *generate_clear_cipher(void *arg) {
     u8 round_key[11][3];
     u8 key_reg[10] = {
@@ -101,7 +161,7 @@ void *generate_clear_cipher(void *arg) {
 
         u8 *result1 = PRESENT24_encrypt(msg->clear_text, round_key);
         u8 *result2 = PRESENT24_decrypt(msg->cipher_text, round_key);
-
+        
         msg->ciphers[i] <<= 24;
         msg->ciphers[i] |= result1[2] | result1[1] << 8 | result1[0] << 16;
 
@@ -112,15 +172,15 @@ void *generate_clear_cipher(void *arg) {
     return NULL;
 }
 
-u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3]) {
-    u8 threads = 8;
+u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3], u8 clear_text2[3], u8 cipher_text2[3]) {
+    u8 threads = 1;
     pthread_t *tid = malloc(sizeof(pthread_t) * threads);
     message_t *msg = malloc(sizeof(message_t) * threads);
     func_ptr thread_func = generate_clear_cipher;
 
     if (tid && msg) {
-        u64 *clears = malloc(sizeof(u64) * (pow(2, 24) - 1));
-        u64 *ciphers = malloc(sizeof(u64) * (pow(2, 24) - 1));
+        u64 *clears = malloc(sizeof(u64) * pow(2, 24));
+        u64 *ciphers = malloc(sizeof(u64) * pow(2, 24));
 
         if (clears && ciphers) {
             for (u8 i = 0; i < threads; i++) {
@@ -132,8 +192,8 @@ u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3]) {
                 msg[i].cipher_text[0] = cipher_text[0];
                 msg[i].cipher_text[1] = cipher_text[1];
                 msg[i].cipher_text[2] = cipher_text[2];
-                msg[i].start = i * ((pow(2, 24) - 1) / threads);
-                msg[i].end = (i + 1) * ((pow(2, 24) - 1) / threads);
+                msg[i].start = i * (pow(2, 24) / threads);
+                msg[i].end = ((i + 1) * (pow(2, 24) / threads)) - 1;
                 pthread_create(tid + i, NULL, thread_func, msg + i);
             }
 
@@ -141,11 +201,62 @@ u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3]) {
                 pthread_join(tid[i], NULL);
             }
 
-            quick_sort(clears, 0, (pow(2, 24) - 2));
+            printf("debut tri\n");
+            quick_sort(clears, 0, (pow(2, 24) - 1));
+            printf("fin tri\n");
+            
+            
 
-            for (u64 i = 0; i < (pow(2, 24) - 1); i++) {
-                i64 index = binary_search(clears, 0, pow(2, 24) - 1, ciphers[i]);
+            for (u64 i = 0; i < pow(2, 24); i++) {
+                u8 k1[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                u8 k2[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+                u8 round_key1[11][3];
+                u8 round_key2[11][3];
+
+                i64 index = binary_search(clears, 0, pow(2, 24), ciphers[i]);
+                
+                if(index != -1) {
+                    k1[0] = (ciphers[i] & 0x0000FFFFFF000000) >> 40;
+                    k1[1] = (ciphers[i] & 0x0000FFFFFF000000) >> 32;
+                    k1[2] = (ciphers[i] & 0x0000FFFFFF000000) >> 24;
+
+                    k2[0] = (clears[index] & 0x0000FFFFFF000000) >> 40;
+                    k2[1] = (clears[index] & 0x0000FFFFFF000000) >> 32;
+                    k2[2] = (clears[index] & 0x0000FFFFFF000000) >> 24;
+
+                    generate_round_keys(k1, round_key1);
+                    generate_round_keys(k2, round_key2);
+
+                    u8 *result1 = PRESENT24_encrypt(clear_text2, round_key1);
+                    u8 *result2 = PRESENT24_encrypt(result1, round_key2);
+                    
+                    if ((result2[0] == cipher_text2[0]) && (result2[1] == cipher_text2[1]) && (result2[2] == cipher_text2[2])) {
+                        printf("K1: %x%x%x\nK2: %x%x%x\n\n", k1[0], k1[1], k1[2], k2[0], k2[1], k2[2]);
+                    }
+                }
+                
             }
+            // TEST des clées
+            // k1[0] = 0x6D;
+            // k1[1] = 0xED;
+            // k1[2] = 0xA7;
+
+            // k2[0] = 0xE7;
+            // k2[1] = 0x14;
+            // k2[2] = 0x1F;
+
+            // u8 round_key3[11][3];
+            // u8 round_key4[11][3];
+
+            // generate_round_keys(k1, round_key3);
+            // generate_round_keys(k2, round_key4);
+
+            // u8 *result1 = PRESENT24_encrypt(clear_text, round_key3);
+            // printf("C1: %x%x%x\n", result1[0], result1[1], result1[2]);
+            
+            // u8 *result2 = PRESENT24_encrypt(result1, round_key4);
+            // printf("C2: %x%x%x\n", result2[0], result2[1], result2[2]);
 
             free(clears);
             free(ciphers);
