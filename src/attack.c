@@ -57,7 +57,12 @@ void valid_key(u64 ciphers, u64 clears, u8 clear_text2[3], u8 cipher_text2[3]) {
 
     generate_round_keys(k1, round_key1);
 
-    u8 *result1 = PRESENT24_encrypt(clear_text2, round_key1);
+    u8 message[3];
+    message[0] = clear_text2[0];
+    message[1] = clear_text2[1];
+    message[2] = clear_text2[2];
+
+    u8 *result1 = PRESENT24_encrypt(message, round_key1);
 
     // Second step
     u8 k2[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -73,7 +78,7 @@ void valid_key(u64 ciphers, u64 clears, u8 clear_text2[3], u8 cipher_text2[3]) {
     u8 *result2 = PRESENT24_encrypt(result1, round_key2);
 
     if ((result2[0] == cipher_text2[0]) && (result2[1] == cipher_text2[1]) && (result2[2] == cipher_text2[2])) {
-        printf("K1: %x%x%x\nK2: %x%x%x\n\n", k3[0], k3[1], k3[2], k4[0], k4[1], k4[2]);
+        printf("k1: %x%x%x\nk2: %x%x%x\n\n", k3[0], k3[1], k3[2], k4[0], k4[1], k4[2]);
     }
 }
 
@@ -126,8 +131,18 @@ void *generate_clear_cipher(void *arg) {
 
         generate_round_keys(key_reg, round_key);
 
-        u8 *result1 = PRESENT24_encrypt(msg->clear_text, round_key);
-        u8 *result2 = PRESENT24_decrypt(msg->cipher_text, round_key);
+        u8 cp_clear[3];
+        cp_clear[0] = msg->clear_text[0];
+        cp_clear[1] = msg->clear_text[1];
+        cp_clear[2] = msg->clear_text[2];
+
+        u8 cp_cipher[3];
+        cp_cipher[0] = msg->cipher_text[0];
+        cp_cipher[1] = msg->cipher_text[1];
+        cp_cipher[2] = msg->cipher_text[2];
+
+        u8 *result1 = PRESENT24_encrypt(cp_clear, round_key);
+        u8 *result2 = PRESENT24_decrypt(cp_cipher, round_key);
 
         msg->ciphers[i] <<= 24;
         msg->ciphers[i] |= result1[2] | result1[1] << 8 | result1[0] << 16;
@@ -153,14 +168,12 @@ u8 *PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3], u8 clear_text2[3], u8 
             for (u8 i = 0; i < threads; i++) {
                 msg[i].clears = clears;
                 msg[i].ciphers = ciphers;
-                msg[i].clear_text[0] = clear_text[0];
-                msg[i].clear_text[1] = clear_text[1];
-                msg[i].clear_text[2] = clear_text[2];
-                msg[i].cipher_text[0] = cipher_text[0];
-                msg[i].cipher_text[1] = cipher_text[1];
-                msg[i].cipher_text[2] = cipher_text[2];
+                for (u8 j = 0; j < 3; j++) {
+                    msg[i].cipher_text[j] = cipher_text[j];
+                    msg[i].clear_text[j] = clear_text[j];
+                }
                 msg[i].start = i * (pow(2, 24) / threads);
-                msg[i].end = ((i + 1) * (pow(2, 24) / threads)) - 1;
+                msg[i].end = (i + 1) * (pow(2, 24) / threads);
                 pthread_create(tid + i, NULL, thread_func, msg + i);
             }
 
