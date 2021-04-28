@@ -117,7 +117,7 @@ void *research_valid_key(void *arg) {
     research_t *msg = (research_t *)arg;
 
     for (i64 i = msg->start; i < msg->end; i++) {
-        i64 index = binary_search(msg->sorted, msg->start, msg->end, msg->unsorted[i], msg->clear_text, msg->cipher_text);
+        i64 index = binary_search(msg->sorted, 0, pow(2, 24) - 1, msg->unsorted[i], msg->clear_text, msg->cipher_text);
 
         if (index != -1) {
             valid_key(msg->unsorted[i], msg->sorted[index], msg->clear_text, msg->cipher_text);
