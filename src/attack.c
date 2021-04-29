@@ -73,7 +73,7 @@ void valid_key(u64 ciphers, u64 clears, u8 m2[3], u8 c2[3]) {
     u8 *result2 = PRESENT24_encrypt(result1, round_key2);
 
     if ((result2[0] == c2[0]) && (result2[1] == c2[1]) && (result2[2] == c2[2])) {
-        printf("k1: %x%x%x\nk2: %x%x%x\n\n", k3[0], k3[1], k3[2], k4[0], k4[1], k4[2]);
+        printf("Found pair:\n\tk1: %x%x%x | k2: %x%x%x\n", k3[0], k3[1], k3[2], k4[0], k4[1], k4[2]);
     }
 }
 
@@ -162,7 +162,7 @@ void *generate_clear_cipher(void *arg) {
 }
 
 void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3]) {
-    static const u8 NB_THREADS = 16;
+    static const u8 NB_THREADS = 8;
     pthread_t *tid1 = malloc(sizeof(pthread_t) * NB_THREADS);
     generate_t *dict = malloc(sizeof(generate_t) * NB_THREADS);
     func_ptr thread_func = generate_clear_cipher;
@@ -170,6 +170,8 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3]) {
     u64 *clears = malloc(sizeof(u64) * (0x01 << 24));
     u64 *ciphers = malloc(sizeof(u64) * (0x01 << 24));
 
+    printf("\nAttack parallelized with %u threads\n", NB_THREADS);
+    printf("Generating dictionnaries...\n");
     for (u8 i = 0; i < NB_THREADS; i++) {
         dict[i].clears = clears;
         dict[i].ciphers = ciphers;
@@ -189,12 +191,14 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3]) {
     free(dict);
     free(tid1);
 
+    printf("Sorting dictionnaries...\n");
     quick_sort(clears, 0, ((0x01 << 24) - 1));
 
     pthread_t *tid2 = malloc(sizeof(pthread_t) * NB_THREADS);
     research_t *rsch = malloc(sizeof(research_t) * NB_THREADS);
     func_ptr thread_func2 = research_valid_key;
 
+    printf("Checking for a valid key pair...\n");
     for (u8 i = 0; i < NB_THREADS; i++) {
         rsch[i].start = i * ((0x01 << 24) / NB_THREADS);
         rsch[i].end = (i + 1) * ((0x01 << 24) / NB_THREADS);

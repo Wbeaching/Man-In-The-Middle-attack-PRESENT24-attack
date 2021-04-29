@@ -4,22 +4,20 @@
 #include "common.h"
 #include "encrypt.h"
 
-i32 verify_args(i8 *arg){
+u8 check_args(i8 *arg){
     if (strlen(arg) > 7) {
-        printf("ERR : invalide size for %s\n", arg);
+        printf("ERROR: invalid size for `%s`\n", arg);
         return -1;
     }
     else {
         for (u32 i = 0; i < strlen(arg); i++) {
-            if ((arg[i] > 47 && arg[i] < 58) || 
-                (arg[i] > 64 && arg[i] < 71) ||
-                (arg[i] > 96 && arg[i] < 103)) {
-                    return 0;
+            if (arg[i] < 47 ||
+                (arg[i] > 57 && arg[i] < 64) ||
+                (arg[i] > 70 && arg[i] < 96) ||
+                arg[i] > 102)
+            {
+                return printf("ERROR: invalid character: `%c` for `%s`\n", arg[i], arg), 1;
             }
-            else  {
-                printf("ERR : invalide char : %c for : %s\n",arg[i], arg);
-                return -1;
-            }           
         }
     }
 
