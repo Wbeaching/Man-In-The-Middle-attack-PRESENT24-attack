@@ -1,7 +1,8 @@
 # Macros
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3 -pthread
-OFLAGS = -O3 -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions -funsafe-math-optimizations
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3
+LFLAGS = -pthread
+OFLAGS = -O3 -march=x86-64 -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions -funsafe-math-optimizations
 FILES = src/*.c
 AR = present24_encrypt
 
@@ -9,7 +10,7 @@ AR = present24_encrypt
 all: present24
 
 present24: $(FILES)
-	$(CC) $(CFLAGS) $(OFLAGS) $(FILES) -o $@
+	$(CC) $(CFLAGS) $(LFLAGS) $(OFLAGS) $(FILES) -o $@
 
 archive:
 	@mkdir -p $(AR)
