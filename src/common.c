@@ -4,10 +4,17 @@
 #include "common.h"
 #include "encrypt.h"
 
+void warn(char *msg) {
+    printf("\033[1m\x1b[33m[WARNING]:\x1b[0m %s\n", msg);
+}
+
+void err(char *msg, u8 nb_err) {
+    printf("\033[1m\x1b[31m[ERROR %u]:\x1b[0m %s\n", nb_err, msg);
+}
+
 u8 check_args(i8 *arg){
-    if (strlen(arg) > 7) {
-        printf("ERROR: invalid size for `%s`\n", arg);
-        return -1;
+    if (strlen(arg) > 6) {
+        return err("Invalid size of argument\n", 1), 1;
     }
     else {
         for (u32 i = 0; i < strlen(arg); i++) {
@@ -16,7 +23,7 @@ u8 check_args(i8 *arg){
                 (arg[i] > 70 && arg[i] < 96) ||
                 arg[i] > 102)
             {
-                return printf("ERROR: invalid character: `%c` for `%s`\n", arg[i], arg), 1;
+                return err("Invalid character in the argument", 2), 1;
             }
         }
     }
@@ -66,3 +73,4 @@ void print_bin(u8 c) {
     }
     printf("\n");
 }
+
