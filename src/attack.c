@@ -9,38 +9,7 @@
 
 typedef void *(*func_ptr)(void *arg);
 
-/*
-static inline void swap(u64 *x, u64 *y) {
-    u64 tmp = *x;
-    *x = *y;
-    *y = tmp;
-}
-
-static u64 partition(u64 *arr, i64 low, i64 high) {
-    u64 pivot = arr[high] & 0x0000000000ffffff;
-    i64 i = (low - 1);
-
-    for (i64 j = low; j < high; j++) {
-        if ((arr[j] & 0x0000000000ffffff) < pivot) {
-            i++;
-            swap(&arr[i], &arr[j]);
-        }
-    }
-    swap(&arr[i + 1], &arr[high]);
-
-    return (i + 1);
-}
-
-static void quick_sort(u64 *arr, i64 low, i64 high) {
-    if (low < high) {
-        u64 part_index = partition(arr, low, high);
-        quick_sort(arr, low, part_index - 1);
-        quick_sort(arr, part_index + 1, high);
-    }
-}
-*/
-
-static void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift) {
+static inline void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift) {
     size_t next_index = 0;
     size_t index[256] = { 0 };
 
@@ -59,7 +28,7 @@ static void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift) {
     }
 }
 
-static void radix_sort(u64 *arr, u64 *tmp, size_t n) {
+static inline void radix_sort(u64 *arr, u64 *tmp, size_t n) {
     radix_sort_pass(arr, tmp, n, 0 * 8);
     radix_sort_pass(tmp, arr, n, 1 * 8);
     radix_sort_pass(arr, tmp, n, 2 * 8);
@@ -244,11 +213,11 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], u8 NB_THREADS) {
     u64 *tmp = malloc(sizeof(u64) * (0x01 << 24));
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
     radix_sort(clears, tmp, (0x01 << 24));
+    radix_sort(ciphers, tmp, (0x01 << 24));
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
     time_taken = (after.tv_sec - before.tv_sec)
         + (after.tv_nsec - before.tv_nsec) / 1E9;
     printf("Done in %.3lf secs\n", time_taken);
-    // quick_sort(clears, 0, ((0x01 << 24) - 1));
 
     pthread_t *tid2 = malloc(sizeof(pthread_t) * NB_THREADS);
     research_t *rsch = malloc(sizeof(research_t) * NB_THREADS);
