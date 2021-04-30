@@ -2,7 +2,7 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3
 LFLAGS = -pthread
-OFLAGS = -O3 -march=x86-64 -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions
+OFLAGS = -O3 -march=native -mtune=native -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions
 FILES = src/*.c
 AR = PRESENT24
 
