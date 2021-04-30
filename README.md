@@ -23,7 +23,17 @@ To build the executable, please use the provided Makefile:
 ```
 make
 ```
-You can then run the program with the following:
+
+You can then run the program with one of the following options:
+- With `-e`, you need to provide a 24 bits message as well as a 24 bits key, like so
 ```
-./present24 -[d | e] TEST_VECTOR
+./present24 -e MESSAGE KEY
+```
+- With `-d`, you need to provide a 24 bits cipher as well as a 24 bits key, like so
+```
+./present24 -d CIPHER KEY
+```
+- With `-a`, you need to provide two 24 bits messages as well as two 24 bits ciphers, like so
+```
+./present24 -a MESSAGE1 CIPHER1 MESSAGE2 CIPHER2
 ```

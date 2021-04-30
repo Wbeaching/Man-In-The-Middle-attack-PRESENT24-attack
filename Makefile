@@ -2,9 +2,9 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3
 LFLAGS = -pthread
-OFLAGS = -O3 -march=x86-64 -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions -funsafe-math-optimizations
+OFLAGS = -O3 -march=x86-64 -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions
 FILES = src/*.c
-AR = present24_encrypt
+AR = PRESENT24
 
 # Rules
 all: present24
@@ -14,7 +14,7 @@ present24: $(FILES)
 
 archive:
 	@mkdir -p $(AR)
-	@cp -r src/ Makefile $(AR)
+	@cp -r src/ Makefile README.md $(AR)
 	@tar zcvf $(AR).tar.gz $(AR)
 	@rm -Rf $(AR)
 

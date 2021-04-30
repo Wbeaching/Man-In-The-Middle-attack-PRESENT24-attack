@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "types.h"
 #include "common.h"
@@ -10,7 +12,7 @@
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        return printf("Usage: %s -[e | d | a | h]\n", argv[0]), 1;
+        return printf("USAGE: %s -[e | d | a]\n", argv[0]), 1;
     }
 
     if (!strcmp(argv[1], "-e")) {
@@ -43,7 +45,7 @@ int main(int argc, char **argv) {
             }
         }
         else {
-            return printf("Usage: %s -e MESSAGE KEY\n", argv[0]), 1;
+            return printf("USAGE: %s -e MESSAGE KEY\n", argv[0]), 1;
         }
     }
     else if (!strcmp(argv[1], "-d")) {
@@ -76,11 +78,11 @@ int main(int argc, char **argv) {
             }
         }
         else {
-            return printf("Usage: %s -d CIPHER KEY\n", argv[0]), 1;
+            return printf("USAGE: %s -d CIPHER KEY\n", argv[0]), 1;
         }
     }
     else if (!strcmp(argv[1], "-a")) {
-        if (argc == 6) {
+        if (argc > 5) {
             if (check_args(argv[2]) == 0 && check_args(argv[3]) == 0 &&
                 check_args(argv[4]) == 0 && check_args(argv[5]) == 0)
             {
@@ -88,6 +90,19 @@ int main(int argc, char **argv) {
                 i32 a3 = strtol(argv[3], NULL, 16);
                 i32 a4 = strtol(argv[4], NULL, 16);
                 i32 a5 = strtol(argv[5], NULL, 16);
+                u8 NB_THREADS = 4;
+
+                if (argc == 8) {
+                    if (!strcmp(argv[6], "-t")) {
+                        i8 a7 = atoi(argv[7]);
+                        if (a7 < 1) {
+                            warn("Invalid number of threads, running with default (4)");
+                        }
+                        else {
+                            NB_THREADS = a7;
+                        }
+                    }
+                }
 
                 u8 m1[3] = {
                     (a2 & 0x00ff0000) >> 16,
@@ -113,20 +128,28 @@ int main(int argc, char **argv) {
                     (a5 & 0x000000ff)
                 };
 
-                printf("Starting man in the middle attack on 2PRESENT24 with:\n");
+                printf("\nStarting man in the middle attack on 2PRESENT24 with:\n");
                 printf("\tMessage 1: %02x%02x%02x | ", m1[0], m1[1], m1[2]);
                 printf("Cipher 1:  %02x%02x%02x\n", c1[0], c1[1], c1[2]);
                 printf("\tMessage 2: %02x%02x%02x | ", m2[0], m2[1], m2[2]);
                 printf("Cipher 2:  %02x%02x%02x\n", c2[0], c2[1], c2[2]);
-                PRESENT24_attack(m1, c1, m2, c2);
+
+                struct timespec before, after;
+                clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+                PRESENT24_attack(m1, c1, m2, c2, NB_THREADS);
+                clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+
+                f64 time_taken = (after.tv_sec - before.tv_sec)
+                    + (after.tv_nsec - before.tv_nsec) / 1E9;
+                printf("\nAttack performed in %.3lf secs\n", time_taken);
             }
         }
         else {
-            return printf("Usage: %s -a m1 c1 m2 c2\n", argv[0]), 1;
+            return printf("USAGE: %s -a m1 c1 m2 c2\n", argv[0]), 1;
         }
     }
     else {
-        return printf("Usage: %s -[e | d | a]\n", argv[0]), 1;
+        return printf("USAGE: %s -[e | d | a]\n", argv[0]), 1;
     }
 
     return 0;
