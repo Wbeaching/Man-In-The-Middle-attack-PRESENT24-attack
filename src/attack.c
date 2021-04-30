@@ -9,15 +9,14 @@
 
 typedef void *(*func_ptr)(void *arg);
 
-static inline
-void swap(u64 *x, u64 *y) {
+/*
+static inline void swap(u64 *x, u64 *y) {
     u64 tmp = *x;
     *x = *y;
     *y = tmp;
 }
 
-//
-u64 partition(u64 *arr, i64 low, i64 high) {
+static u64 partition(u64 *arr, i64 low, i64 high) {
     u64 pivot = arr[high] & 0x0000000000ffffff;
     i64 i = (low - 1);
 
@@ -32,20 +31,45 @@ u64 partition(u64 *arr, i64 low, i64 high) {
     return (i + 1);
 }
 
-//
-void quick_sort(u64 *arr, i64 low, i64 high) {
-    if (arr) {
-        if (low < high) {
-            u64 part_index = partition(arr, low, high);
-            quick_sort(arr, low, part_index - 1);
-            quick_sort(arr, part_index + 1, high);
-        }
-    } else {
-        printf("Error: arr_t pointer is already NULL\n");
+static void quick_sort(u64 *arr, i64 low, i64 high) {
+    if (low < high) {
+        u64 part_index = partition(arr, low, high);
+        quick_sort(arr, low, part_index - 1);
+        quick_sort(arr, part_index + 1, high);
+    }
+}
+*/
+
+static void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift) {
+    size_t next_index = 0;
+    size_t index[256] = { 0 };
+
+    for (size_t i = 0; i < n; i++) {
+        index[(src[i] >> shift) & 0x00000000000000ff]++;
+    }
+
+    for (size_t i = 0; i < 256; i++) {
+        size_t count = index[i];
+        index[i] = next_index;
+        next_index += count;
+    }
+
+    for (size_t i = 0; i < n; i++) {
+        dst[index[(src[i] >> shift) & 0x00000000000000ff]++] = src[i];
     }
 }
 
-void valid_key(u64 ciphers, u64 clears, u8 m2[3], u8 c2[3]) {
+static void radix_sort(u64 *arr, u64 *tmp, size_t n) {
+    radix_sort_pass(arr, tmp, n, 0 * 8);
+    radix_sort_pass(tmp, arr, n, 1 * 8);
+    radix_sort_pass(arr, tmp, n, 2 * 8);
+
+    for (size_t i = 0; i < n; i++) {
+        arr[i] = tmp[i];
+    }
+}
+
+static void valid_key(u64 ciphers, u64 clears, u8 m2[3], u8 c2[3]) {
     // First step
     u8 k1[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     u8 k3[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -72,24 +96,40 @@ void valid_key(u64 ciphers, u64 clears, u8 m2[3], u8 c2[3]) {
 
     u8 *result2 = PRESENT24_encrypt(result1, round_key2);
 
-    if ((result2[0] == c2[0]) && (result2[1] == c2[1]) && (result2[2] == c2[2])) {
-        printf("Found pair:\n\tk1: %x%x%x | k2: %x%x%x\n", k3[0], k3[1], k3[2], k4[0], k4[1], k4[2]);
+    if ((result2[0] == c2[0]) &&
+        (result2[1] == c2[1]) &&
+        (result2[2] == c2[2]))
+    {
+        printf("\nFound pair:\n\tk1: %x%x%x | k2: %x%x%x\n",
+            k3[0], k3[1], k3[2],
+            k4[0], k4[1], k4[2]
+        );
     }
 }
 
-i64 binary_search(u64 *arr, i64 low, i64 high, u64 target, u8 m2[3], u8 c2[3]) {
+static i64 binary_search(u64 *arr, i64 low, i64 high,
+                         u64 target, u8 m2[3], u8 c2[3])
+{
     if (high >= low) {
         i64 mid = low + (high - low) / 2;
 
-        if ((arr[mid] & 0x0000000000ffffff) == (target & 0x0000000000ffffff)) {
+        if ((arr[mid] & 0x0000000000ffffff) ==
+            (target & 0x0000000000ffffff))
+        {
             i64 i = 1;
-            while (((mid - i) >= low) && ((arr[mid - i] & 0x0000000000ffffff) == (target & 0x0000000000ffffff))) {
+            while (((mid - i) >= low) &&
+                   ((arr[mid - i] & 0x0000000000ffffff) ==
+                   (target & 0x0000000000ffffff)))
+            {
                 valid_key(target, arr[mid - i], m2, c2);
                 i++;
             }
 
             i64 j = 1;
-            while (((mid + j) <= high) && ((arr[mid + j] & 0x0000000000ffffff) == (target & 0x0000000000ffffff))) {
+            while (((mid + j) <= high) &&
+                   ((arr[mid + j] & 0x0000000000ffffff) ==
+                   (target & 0x0000000000ffffff)))
+            {
                 valid_key(target, arr[mid + j], m2, c2);
                 j++;
             }
@@ -97,7 +137,9 @@ i64 binary_search(u64 *arr, i64 low, i64 high, u64 target, u8 m2[3], u8 c2[3]) {
             return mid;
         }
 
-        if ((arr[mid] & 0x0000000000ffffff) > (target & 0x0000000000ffffff)) {
+        if ((arr[mid] & 0x0000000000ffffff) >
+            (target & 0x0000000000ffffff))
+        {
             return binary_search(arr, low, mid - 1, target, m2, c2);
         }
 
@@ -161,17 +203,19 @@ void *generate_clear_cipher(void *arg) {
     return NULL;
 }
 
-void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3]) {
-    static const u8 NB_THREADS = 8;
+void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], u8 NB_THREADS) {
     pthread_t *tid1 = malloc(sizeof(pthread_t) * NB_THREADS);
     generate_t *dict = malloc(sizeof(generate_t) * NB_THREADS);
     func_ptr thread_func = generate_clear_cipher;
+    struct timespec before, after;
 
     u64 *clears = malloc(sizeof(u64) * (0x01 << 24));
     u64 *ciphers = malloc(sizeof(u64) * (0x01 << 24));
 
     printf("\nAttack parallelized with %u threads\n", NB_THREADS);
-    printf("Generating dictionnaries...\n");
+
+    printf("Generating dictionaries... ");
+    clock_gettime(CLOCK_MONOTONIC_RAW, &before);
     for (u8 i = 0; i < NB_THREADS; i++) {
         dict[i].clears = clears;
         dict[i].ciphers = ciphers;
@@ -187,12 +231,24 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3]) {
     for (u8 i = 0; i < NB_THREADS; i++) {
         pthread_join(tid1[i], NULL);
     }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+
+    f64 time_taken = (after.tv_sec - before.tv_sec)
+        + (after.tv_nsec - before.tv_nsec) / 1E9;
+    printf("Done in %.3lf secs\n", time_taken);
 
     free(dict);
     free(tid1);
 
-    printf("Sorting dictionnaries...\n");
-    quick_sort(clears, 0, ((0x01 << 24) - 1));
+    printf("Sorting dictionaries... ");
+    u64 *tmp = malloc(sizeof(u64) * (0x01 << 24));
+    clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+    radix_sort(clears, tmp, (0x01 << 24));
+    clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+    time_taken = (after.tv_sec - before.tv_sec)
+        + (after.tv_nsec - before.tv_nsec) / 1E9;
+    printf("Done in %.3lf secs\n", time_taken);
+    // quick_sort(clears, 0, ((0x01 << 24) - 1));
 
     pthread_t *tid2 = malloc(sizeof(pthread_t) * NB_THREADS);
     research_t *rsch = malloc(sizeof(research_t) * NB_THREADS);
@@ -218,6 +274,7 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3]) {
     free(rsch);
     free(tid2);
 
+    free(tmp);
     free(clears);
     free(ciphers);
 }

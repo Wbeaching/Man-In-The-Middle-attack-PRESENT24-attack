@@ -20,4 +20,4 @@ typedef struct {
     u8 c[3];
 } research_t;
 
-void PRESENT24_attack(u8 clear_text[3], u8 cipher_text[3], u8 clear_text2[3], u8 cipher_text2[3]);
+void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], u8 NB_THREADS);
