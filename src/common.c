@@ -31,9 +31,9 @@ u8 check_args(i8 *arg){
     return 0;
 }
 
-void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
+inline void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
     u8 shifted_reg[10];
-    key_reg[3] = key_reg[4] = key_reg[5] = key_reg[6] = key_reg[7] = key_reg[8] = key_reg[9] = 0;
+    memset((void *)(key_reg + 3), 0, sizeof(u8) * 10);
 
     for (u8 i = 0; i < 11; i++) {
         // Update the round key
