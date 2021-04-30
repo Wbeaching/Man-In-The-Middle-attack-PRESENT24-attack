@@ -14,45 +14,23 @@ inline u8 sbox_layer_encrypt(u8 byte) {
     return (sbox[((byte & 0xF0) >> 4)] << 4) | (sbox[byte & 0x0F]);
 }
 
-/*
-u8 pbox_layer(u8 message) {
-    u32 r = 0x0C0600;
+static inline u8 *pbox_layer_encrypt(u8 m[3]) {
+    u8 p[3];
 
-    for (u8 j = 0; j < 24; j++) {
-        message |= ((message >> j) & 0x01) << (r & 0xFF);
-        r = ROTATE(r + 1, 6);
+    p[0] = (m[0] & 0x80)      | (m[0] & 0x08) << 3 | (m[1] & 0x80) >> 2 | (m[1] & 0x08) << 1 |
+           (m[2] & 0x80) >> 4 | (m[2] & 0x08) >> 1 | (m[0] & 0x40) >> 5 | (m[0] & 0x04) >> 2;
+
+    p[1] = (m[1] & 0x40) << 1 | (m[1] & 0x04) << 4 | (m[2] & 0x40) >> 1 | (m[2] & 0x04) << 2 |
+           (m[0] & 0x20) >> 2 | (m[0] & 0x02) << 1 | (m[1] & 0x20) >> 4 | (m[1] & 0x02) >> 1;
+
+    p[2] = (m[2] & 0x20) << 2 | (m[2] & 0x02) << 5 | (m[0] & 0x10) << 1 | (m[0] & 0x01) << 4 |
+           (m[1] & 0x10) >> 1 | (m[1] & 0x01) << 2 | (m[2] & 0x10) >> 3 | (m[2] & 0x01);
+
+    for (u8 i = 0; i < 3; i++) {
+        m[i] = p[i];
     }
 
-    return message;
-}
-*/
-
-u8 *pbox_layer_encrypt(u8 message[3]) {
-    static const u8 pbox[24] = {
-        0, 6,  12, 18,
-        1, 7,  13, 19,
-        2, 8,  14, 20,
-        3, 9,  15, 21,
-        4, 10, 16, 22,
-        5, 11, 17, 23
-    };
-
-    u8 tmp_message[24];
-    // Translate 3 bytes array to 24 bytes array containing 1 bit each
-    for (u8 i = 0, j = 0; i < 24; i++) {
-        j += (((i & 7) == 0) && (i > 0));
-        tmp_message[pbox[i]] = (message[j] << (i & 7)) & 0x80;
-    }
-
-    // Recompress the 24 bytes back into a 3 bytes array
-    u8 compressed[3] = { 0x00, 0x00, 0x00 };
-    for (u8 i = 0, j = 0; i < 24; i++) {
-        j += (((i & 7) == 0) && (i > 0));
-        compressed[j] |= tmp_message[i] >> (i & 7);
-        message[j] = compressed[j];
-    }
-
-    return message;
+    return m;
 }
 
 u8 *PRESENT24_encrypt(u8 message[3], u8 round_key[11][3]) {
@@ -69,33 +47,8 @@ u8 *PRESENT24_encrypt(u8 message[3], u8 round_key[11][3]) {
         }
 
         // PBox layer
-        static const u8 pbox[24] = {
-            0, 6,  12, 18,
-            1, 7,  13, 19,
-            2, 8,  14, 20,
-            3, 9,  15, 21,
-            4, 10, 16, 22,
-            5, 11, 17, 23
-        };
-
-        u8 tmp_message[24];
-        // Translate 3 bytes array to 24 bytes array containing 1 bit each
-        for (u8 i = 0, j = 0; i < 24; i++) {
-            j += (((i & 7) == 0) && (i > 0));
-            tmp_message[pbox[i]] = (message[j] << (i & 7)) & 0x80;
-        }
-
-        // Recompress the 24 bytes back into a 3 bytes array
-        u8 compressed[3] = { 0x00, 0x00, 0x00 };
-        for (u8 i = 0, j = 0; i < 24; i++) {
-            j += (((i & 7) == 0) && (i > 0));
-            compressed[j] |= tmp_message[i] >> (i & 7);
-            message[j] = compressed[j];
-        }
-
         //message = pbox_layer_encrypt(message);
-
-        //printf("State:  %x%x%x\n", message[0], message[1], message[2]);
+        message = pbox_layer_encrypt(message);
     }
 
     // XOR with key11
