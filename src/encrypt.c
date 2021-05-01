@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "encrypt.h"
+#include "common.h"
 
 inline u8 sbox_layer_encrypt(u8 byte) {
     static const u8 sbox[16] = {
@@ -47,7 +49,6 @@ u8 *PRESENT24_encrypt(u8 message[3], u8 round_key[11][3]) {
         }
 
         // PBox layer
-        //message = pbox_layer_encrypt(message);
         message = pbox_layer_encrypt(message);
     }
 
@@ -58,4 +59,31 @@ u8 *PRESENT24_encrypt(u8 message[3], u8 round_key[11][3]) {
 
     // return cipher
     return message;
+}
+
+void main_encrypt(i8 *message, i8 *key) {
+    i32 a2 = strtol(message, NULL, 16);
+    i32 a3 = strtol(key, NULL, 16);
+
+    u8 m[3] = {
+        (a2 & 0x00ff0000) >> 16,
+        (a2 & 0x0000ff00) >> 8,
+        (a2 & 0x000000ff)
+    };
+
+    u8 k_reg[10] = {
+        (a3 & 0x00ff0000) >> 16,
+        (a3 & 0x0000ff00) >> 8,
+        (a3 & 0x000000ff), 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    u8 rk[11][3];
+
+    printf("Starting PRESENT24 encryption with:\n");
+    printf("\tMessage: %02x%02x%02x\n", m[0], m[1], m[2]);
+    printf("\tKey:\t %02x%02x%02x\n", k_reg[0], k_reg[1], k_reg[2]);
+
+    generate_round_keys(k_reg, rk);
+    u8 *c = PRESENT24_encrypt(m, rk);
+    printf("\nOutput cipher:\t %02x%02x%02x\n", c[0], c[1], c[2]);
 }
