@@ -40,7 +40,7 @@ You can then run the program with one of the following options:
 ```
 If the `-t` option is not specified, the program will run with 4 threads by default.
 
-The Makefile comes with pre-made commands to **test** the application. These are the following:
+The Makefile comes with pre-made commands to ***test*** the application. These are the following:
 - `make encrypt` runs PRESENT24 on the 4 test vectors provided in the subject.
 - `make decrypt` runs PRESENT24 on the 4 test vectors provided in the subject.
 - `make attack_theophile` runs the attack on PRESENT24 with Theophile's pairs of plain/cipher texts.
