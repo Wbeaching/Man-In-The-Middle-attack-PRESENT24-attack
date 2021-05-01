@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "decrypt.h"
+#include "common.h"
 
 inline u8 sbox_layer_decrypt(u8 byte) {
     static const u8 sbox[16] = {
@@ -33,41 +35,6 @@ static inline u8 *pbox_layer_decrypt(u8 m[3]) {
     return m;
 }
 
-/*
-static inline u8 *pbox_layer_decrypt(u8 message[3]) {
-    static const u8 pbox[24] = {
-        0,  4,  8,  12,
-        16, 20, 1,  5,
-        9,  13, 17, 21,
-        2,  6,  10, 14,
-        18, 22, 3,  7,
-        11, 15, 19, 23
-    };
-
-    u8 tmp_message[24];
-    // Translate 3 bytes array to 24 bytes array containing 1 bit each
-    for (u8 i = 0, j = 0; i < 24; i += 8, j++) {
-        tmp_message[pbox[i]] = (message[j] << (i & 7)) & 0x80;
-        tmp_message[pbox[i + 1]] = (message[j] << ((i + 1) & 7)) & 0x80;
-        tmp_message[pbox[i + 2]] = (message[j] << ((i + 2) & 7)) & 0x80;
-        tmp_message[pbox[i + 3]] = (message[j] << ((i + 3) & 7)) & 0x80;
-        tmp_message[pbox[i + 4]] = (message[j] << ((i + 4) & 7)) & 0x80;
-        tmp_message[pbox[i + 5]] = (message[j] << ((i + 5) & 7)) & 0x80;
-        tmp_message[pbox[i + 6]] = (message[j] << ((i + 6) & 7)) & 0x80;
-        tmp_message[pbox[i + 7]] = (message[j] << ((i + 7) & 7)) & 0x80;
-    }
-
-    // Recompress the 24 bytes back into a 3 bytes array
-    u8 compressed[3] = { 0x00, 0x00, 0x00 };
-    for (u8 i = 0, j = 0; i < 24; i++) {
-        j += (((i & 7) == 0) && (i > 0));
-        compressed[j] |= tmp_message[i] >> (i & 7);
-        message[j] = compressed[j];
-    }
-
-    return message;
-}*/
-
 u8 *PRESENT24_decrypt(u8 message[3], u8 round_key[11][3]) {
     // XOR with key11
     for (u8 i = 0; i < 3; i++) {
@@ -88,10 +55,35 @@ u8 *PRESENT24_decrypt(u8 message[3], u8 round_key[11][3]) {
         for (u8 j = 0; j < 3; j++) {
             message[j] ^= round_key[i - 1][j];
         }
-
-        // printf("State:  %x%x%x\n", message[0], message[1], message[2]);
     }
 
     // return clear text
     return message;
+}
+
+void main_decrypt(i8 *cipher, i8 *key) {
+    i32 a2 = strtol(cipher, NULL, 16);
+    i32 a3 = strtol(key, NULL, 16);
+
+    u8 c[3] = {
+        (a2 & 0x00ff0000) >> 16,
+        (a2 & 0x0000ff00) >> 8,
+        (a2 & 0x000000ff)
+    };
+
+    u8 k_reg[10] = {
+        (a3 & 0x00ff0000) >> 16,
+        (a3 & 0x0000ff00) >> 8,
+        (a3 & 0x000000ff), 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    u8 rk[11][3];
+
+    printf("Starting PRESENT24 decryption with:\n");
+    printf("\tCipher:  %02x%02x%02x\n", c[0], c[1], c[2]);
+    printf("\tKey:\t %02x%02x%02x\n", k_reg[0], k_reg[1], k_reg[2]);
+
+    generate_round_keys(k_reg, rk);
+    u8 *m = PRESENT24_decrypt(c, rk);
+    printf("\nOutput message:\t %02x%02x%02x\n", m[0], m[1], m[2]);
 }
