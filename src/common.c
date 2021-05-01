@@ -4,34 +4,56 @@
 #include "common.h"
 #include "encrypt.h"
 
-void warn(char *msg) {
-    printf("\033[1m\x1b[33m[WARNING]:\x1b[0m %s\n", msg);
+inline
+void info()
+{
+    printf("\033[1m[INFO]:\x1b[0m    ");
 }
 
-void err(char *msg, u8 nb_err) {
-    printf("\033[1m\x1b[31m[ERROR %u]:\x1b[0m %s\n", nb_err, msg);
+inline
+void warn()
+{
+    printf("\033[1m\x1b[33m[WARNING]:\x1b[0m ");
 }
 
-u8 check_args(i8 *arg){
-    if (strlen(arg) > 6) {
-        return err("Invalid size of argument\n", 1), 1;
+inline
+void err(size_t nb_err)
+{
+    printf("\033[1m\x1b[31m[ERROR %lu]:\x1b[0m ", nb_err);
+}
+
+inline
+void measure_time(struct timespec *before, struct timespec *after) {
+    f64 time_taken = (after->tv_sec - before->tv_sec) + (after->tv_nsec - before->tv_nsec) / 1E9;
+    printf("done in %.3lf secs\n", time_taken);
+}
+
+inline
+u8 check_args(i8 *arg)
+{
+    if (strlen(arg) > 6)
+    {
+        err(2);
+        printf("Invalid size for argument %s\n", arg);
+        return 2;
     }
-    else {
-        for (u32 i = 0; i < strlen(arg); i++) {
-            if (arg[i] < 47 ||
-                (arg[i] > 57 && arg[i] < 64) ||
-                (arg[i] > 70 && arg[i] < 96) ||
-                arg[i] > 102)
-            {
-                return err("Invalid character in the argument", 2), 1;
-            }
+
+    for (size_t i = 0; i < strlen(arg); i++)
+    {
+        if (arg[i] < 47 || (arg[i] > 57 && arg[i] < 64) || (arg[i] > 70 && arg[i] < 96) || arg[i] > 102)
+        {
+            err(3);
+            printf("Invalid character %c in argument %s", arg[i], arg);
+            return 3;
         }
     }
 
     return 0;
 }
 
-inline void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
+inline
+void generate_round_keys(u8 key_reg[10], u8 round_key[11][3])
+{
     u8 shifted_reg[10];
     key_reg[3] = 0;
     key_reg[4] = 0;
@@ -41,7 +63,8 @@ inline void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
     key_reg[8] = 0;
     key_reg[9] = 0;
 
-    for (u8 i = 0; i < 11; i++) {
+    for (u8 i = 0; i < 11; i++)
+    {
         // Update the round key
         round_key[i][0] = key_reg[5];
         round_key[i][1] = key_reg[6];
@@ -67,16 +90,9 @@ inline void generate_round_keys(u8 key_reg[10], u8 round_key[11][3]) {
         shifted_reg[8] ^= (i + 1) << 7;
 
         // Copy the temporarily shifted key register to the original
-        for (int j = 0; j < 10; j++) {
+        for (int j = 0; j < 10; j++)
+        {
             key_reg[j] = shifted_reg[j];
         }
     }
 }
-
-void print_bin(u8 c) {
-    for (i32 i = 7; i >= 0; i--) {
-        printf("%d", (c >> i) & 0x01 ? 1 : 0);
-    }
-    printf("\n");
-}
-

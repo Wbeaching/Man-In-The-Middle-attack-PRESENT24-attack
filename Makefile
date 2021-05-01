@@ -2,7 +2,7 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3
 LFLAGS = -pthread
-OFLAGS = -O3 -march=native -mtune=native -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions
+OFLAGS = -O3 -march=native -mtune=native -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions -floop-interchange -floop-unroll-and-jam -fpeel-loops -fsplit-loops -ftree-loop-vectorize -ftree-slp-vectorize
 FILES = src/*.c
 AR = PRESENT24
 

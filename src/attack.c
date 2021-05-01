@@ -1,249 +1,236 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "common.h"
 #include "encrypt.h"
 #include "decrypt.h"
 #include "attack.h"
 
-typedef void *(*func_ptr)(void *arg);
+typedef void *(*fn_ptr)(void *arg);
 
-static inline void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift) {
-    size_t next_index = 0;
-    size_t index[256] = { 0 };
+static inline
+void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift)
+{
+    size_t next_index = 0, index[256] = { 0 };
 
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++)
+    {
         index[(src[i] >> shift) & 0x00000000000000ff]++;
     }
 
-    for (size_t i = 0; i < 256; i++) {
+    for (size_t i = 0; i < 256; i++)
+    {
         size_t count = index[i];
         index[i] = next_index;
         next_index += count;
     }
 
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++)
+    {
         dst[index[(src[i] >> shift) & 0x00000000000000ff]++] = src[i];
     }
 }
 
-static inline void radix_sort(u64 *arr, u64 *tmp, size_t n) {
+static inline
+void radix_sort(u64 *arr, u64 *tmp, size_t n)
+{
     radix_sort_pass(arr, tmp, n, 0 * 8);
     radix_sort_pass(tmp, arr, n, 1 * 8);
     radix_sort_pass(arr, tmp, n, 2 * 8);
 
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++)
+    {
         arr[i] = tmp[i];
     }
 }
 
-static void valid_key(u64 ciphers, u64 clears, u8 m2[3], u8 c2[3]) {
-    // First step
-    u8 k1[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    u8 k3[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    u8 k2[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    u8 k4[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static
+void valid_key(u64 encrypted, u64 decrypted, u8 m2[3], u8 c2[3])
+{
+    u8 rk1[11][3], rk2[11][3], tmp_m2[3];
+    u8 k1[10], k3[10], k2[10], k4[10];
 
-    u8 round_key1[11][3];
-    k1[0] = k3[0] = (ciphers & 0x0000ffffff000000) >> 40;
-    k1[1] = k3[1] = (ciphers & 0x0000ffffff000000) >> 32;
-    k1[2] = k3[2] = (ciphers & 0x0000ffffff000000) >> 24;
-    generate_round_keys(k1, round_key1);
-
-    u8 message[3];
-    message[0] = m2[0];
-    message[1] = m2[1];
-    message[2] = m2[2];
-    u8 *result1 = PRESENT24_encrypt(message, round_key1);
-
-    u8 round_key2[11][3];
-    k2[0] = k4[0] = (clears & 0x0000ffffff000000) >> 40;
-    k2[1] = k4[1] = (clears & 0x0000ffffff000000) >> 32;
-    k2[2] = k4[2] = (clears & 0x0000ffffff000000) >> 24;
-    generate_round_keys(k2, round_key2);
-
-    u8 *result2 = PRESENT24_encrypt(result1, round_key2);
-
-    if ((result2[0] == c2[0]) &&
-        (result2[1] == c2[1]) &&
-        (result2[2] == c2[2]))
+    for (u8 i = 0; i < 3; i++)
     {
-        printf("\nFound pair:\n\tk1: %x%x%x | k2: %x%x%x\n",
+        tmp_m2[i] = m2[i];
+        k1[i] = k3[i] = (encrypted & MASK_K64) >> (40 - (i * 8));
+        k2[i] = k4[i] = (decrypted & MASK_K64) >> (40 - (i * 8));
+    }
+
+    generate_round_keys(k1, rk1);
+    generate_round_keys(k2, rk2);
+
+    u8 *res1 = PRESENT24_encrypt(tmp_m2, rk1);
+    u8 *res2 = PRESENT24_encrypt(res1, rk2);
+
+    if ((res2[0] == c2[0]) && (res2[1] == c2[1]) && (res2[2] == c2[2]))
+    {
+        printf("\nFound pair!\n    k1: %02x%02x%02x | k2: %02x%02x%02x\n",
             k3[0], k3[1], k3[2],
             k4[0], k4[1], k4[2]
         );
     }
 }
 
-static i64 binary_search(u64 *arr, i64 low, i64 high,
-                         u64 target, u8 m2[3], u8 c2[3])
+static
+i64 binary_search(u64 *dict, i64 lo, i64 hi, u64 target, u8 m2[3], u8 c2[3])
 {
-    if (high >= low) {
-        i64 mid = low + (high - low) / 2;
+    if (hi >= lo)
+    {
+        i64 mid = lo + (hi - lo) / 2;
 
-        if ((arr[mid] & 0x0000000000ffffff) ==
-            (target & 0x0000000000ffffff))
+        if ((dict[mid] & MASK_T64) == (target & MASK_T64))
         {
             i64 i = 1;
-            while (((mid - i) >= low) &&
-                   ((arr[mid - i] & 0x0000000000ffffff) ==
-                   (target & 0x0000000000ffffff)))
+            while (((mid - i) >= lo) && ((dict[mid - i] & MASK_T64) == (target & MASK_T64)))
             {
-                valid_key(target, arr[mid - i], m2, c2);
+                valid_key(target, dict[mid - i], m2, c2);
                 i++;
             }
 
-            i64 j = 1;
-            while (((mid + j) <= high) &&
-                   ((arr[mid + j] & 0x0000000000ffffff) ==
-                   (target & 0x0000000000ffffff)))
+            i = 1;
+            while (((mid + i) <= hi) && ((dict[mid + i] & MASK_T64) == (target & MASK_T64)))
             {
-                valid_key(target, arr[mid + j], m2, c2);
-                j++;
+                valid_key(target, dict[mid + i], m2, c2);
+                i++;
             }
 
             return mid;
         }
 
-        if ((arr[mid] & 0x0000000000ffffff) >
-            (target & 0x0000000000ffffff))
+        if ((dict[mid] & MASK_T64) > (target & MASK_T64))
         {
-            return binary_search(arr, low, mid - 1, target, m2, c2);
+            return binary_search(dict, lo, mid - 1, target, m2, c2);
         }
 
-        return binary_search(arr, mid + 1, high, target, m2, c2);
+        return binary_search(dict, mid + 1, hi, target, m2, c2);
     }
 
     return -1;
 }
 
-void *research_valid_key(void *arg) {
-    research_t *r = (research_t *)arg;
+void *attack_dictionaries(void *arg)
+{
+    attack_t *r = (attack_t *)arg;
 
-    for (i64 i = r->start; i < r->end; i++) {
-        i64 index = binary_search(r->sorted, 0, (0x01 << 24) - 1, r->unsorted[i], r->m, r->c);
+    for (i64 i = r->start; i < r->end; i++)
+    {
+        i64 index = binary_search(r->sorted, 0, DICT_SIZE - 1, r->unsorted[i], r->m, r->c);
 
-        if (index != -1) {
+        if (index != -1)
+        {
             valid_key(r->unsorted[i], r->sorted[index], r->m, r->c);
         }
     }
+
     return NULL;
 }
 
-void *generate_clear_cipher(void *arg) {
-    generate_t *g = (generate_t*)arg;
+void *generate_dictionaries(void *arg)
+{
+    dictionary_t *dict = (dictionary_t*)arg;
+    u8 rk[11][3], k_reg[10];
 
-    u8 round_key[11][3];
-    u8 key_reg[10] = {
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0
-    };
+    for (u32 i = dict->start; i < dict->end; i++)
+    {
+        u8 tmp_m[3], tmp_c[3];
+        for (u8 i = 0; i < 3; i++)
+        {
+            tmp_m[i] = dict->m[i];
+            tmp_c[i] = dict->c[i];
+        }
 
-    for (u32 i = g->start; i < g->end; i++) {
-        key_reg[0] = (i & 0xff0000) >> 16;
-        key_reg[1] = (i & 0x00ff00) >> 8;
-        key_reg[2] =  i & 0x0000ff;
+        k_reg[0] = (i & 0xff0000) >> 16;
+        k_reg[1] = (i & 0x00ff00) >> 8;
+        k_reg[2] =  i & 0x0000ff;
 
-        g->ciphers[i] |= key_reg[2] | key_reg[1] << 8 | key_reg[0] << 16;
-        g->clears[i]  |= key_reg[2] | key_reg[1] << 8 | key_reg[0] << 16;
+        dict->encrypted[i] |= k_reg[0] << 16 | k_reg[1] << 8 | k_reg[2];
+        dict->decrypted[i] |= k_reg[0] << 16 | k_reg[1] << 8 | k_reg[2];
 
-        generate_round_keys(key_reg, round_key);
+        generate_round_keys(k_reg, rk);
 
-        u8 cp_clear[3];
-        cp_clear[0] = g->m[0];
-        cp_clear[1] = g->m[1];
-        cp_clear[2] = g->m[2];
-        u8 *result1 = PRESENT24_encrypt(cp_clear, round_key);
+        u8 *res1 = PRESENT24_encrypt(tmp_m, rk);
+        u8 *res2 = PRESENT24_decrypt(tmp_c, rk);
 
-        u8 cp_cipher[3];
-        cp_cipher[0] = g->c[0];
-        cp_cipher[1] = g->c[1];
-        cp_cipher[2] = g->c[2];
-        u8 *result2 = PRESENT24_decrypt(cp_cipher, round_key);
+        dict->encrypted[i] <<= 24;
+        dict->decrypted[i] <<= 24;
 
-        g->ciphers[i] <<= 24;
-        g->ciphers[i] |= result1[2] | result1[1] << 8 | result1[0] << 16;
-
-        g->clears[i] <<= 24;
-        g->clears[i] |= result2[2] | result2[1] << 8 | result2[0] << 16;
+        dict->encrypted[i] |= res1[0] << 16 | res1[1] << 8 | res1[2];
+        dict->decrypted[i] |= res2[0] << 16 | res2[1] << 8 | res2[2];
     }
 
     return NULL;
 }
 
-void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], u8 NB_THREADS) {
-    pthread_t *tid1 = malloc(sizeof(pthread_t) * NB_THREADS);
-    generate_t *dict = malloc(sizeof(generate_t) * NB_THREADS);
-    func_ptr thread_func = generate_clear_cipher;
+void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
+{
     struct timespec before, after;
 
-    u64 *clears = malloc(sizeof(u64) * (0x01 << 24));
-    u64 *ciphers = malloc(sizeof(u64) * (0x01 << 24));
+    u64 *decrypted = malloc(sizeof(u64) * DICT_SIZE);
+    u64 *encrypted = malloc(sizeof(u64) * DICT_SIZE);
+    pthread_t *tid1 = malloc(sizeof(pthread_t) * NB_THREADS);
+    dictionary_t *dict = malloc(sizeof(dictionary_t) * NB_THREADS);
+    fn_ptr handle1 = generate_dictionaries;
 
-    printf("\nAttack parallelized with %u threads\n", NB_THREADS);
-
+    printf("\nAttack parallelized with %lu threads\n", NB_THREADS);
     printf("Generating dictionaries... ");
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
-    for (u8 i = 0; i < NB_THREADS; i++) {
-        dict[i].clears = clears;
-        dict[i].ciphers = ciphers;
-        dict[i].start = i * ((0x01 << 24) / NB_THREADS);
-        dict[i].end = (i + 1) * ((0x01 << 24) / NB_THREADS);
-        for (u8 j = 0; j < 3; j++) {
+    for (u8 i = 0; i < NB_THREADS; i++)
+    {
+        dict[i].decrypted = decrypted;
+        dict[i].encrypted = encrypted;
+        dict[i].start = i * (DICT_SIZE / NB_THREADS);
+        dict[i].end = (i + 1) * (DICT_SIZE / NB_THREADS);
+        for (u8 j = 0; j < 3; j++)
+        {
             dict[i].m[j] = m1[j];
             dict[i].c[j] = c1[j];
         }
-        pthread_create(tid1 + i, NULL, thread_func, dict + i);
+        pthread_create(tid1 + i, NULL, handle1, dict + i);
     }
-
-    for (u8 i = 0; i < NB_THREADS; i++) {
+    for (u8 i = 0; i < NB_THREADS; i++)
+    {
         pthread_join(tid1[i], NULL);
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
-
-    f64 time_taken = (after.tv_sec - before.tv_sec)
-        + (after.tv_nsec - before.tv_nsec) / 1E9;
-    printf("Done in %.3lf secs\n", time_taken);
-
+    measure_time(&before, &after);
     free(dict);
     free(tid1);
 
+    u64 *tmp = malloc(sizeof(u64) * DICT_SIZE);
     printf("Sorting dictionaries... ");
-    u64 *tmp = malloc(sizeof(u64) * (0x01 << 24));
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
-    radix_sort(clears, tmp, (0x01 << 24));
-    radix_sort(ciphers, tmp, (0x01 << 24));
+    radix_sort(decrypted, tmp, DICT_SIZE);
+    radix_sort(encrypted, tmp, DICT_SIZE);
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
-    time_taken = (after.tv_sec - before.tv_sec)
-        + (after.tv_nsec - before.tv_nsec) / 1E9;
-    printf("Done in %.3lf secs\n", time_taken);
+    measure_time(&before, &after);
+    free(tmp);
 
     pthread_t *tid2 = malloc(sizeof(pthread_t) * NB_THREADS);
-    research_t *rsch = malloc(sizeof(research_t) * NB_THREADS);
-    func_ptr thread_func2 = research_valid_key;
-
+    attack_t *atk = malloc(sizeof(attack_t) * NB_THREADS);
+    fn_ptr handle2 = attack_dictionaries;
     printf("Checking for a valid key pair...\n");
-    for (u8 i = 0; i < NB_THREADS; i++) {
-        rsch[i].start = i * ((0x01 << 24) / NB_THREADS);
-        rsch[i].end = (i + 1) * ((0x01 << 24) / NB_THREADS);
-        rsch[i].sorted = clears;
-        rsch[i].unsorted = ciphers;
-        for (u8 j = 0; j < 3; j++) {
-            rsch[i].m[j] = m2[j];
-            rsch[i].c[j] = c2[j];
+    for (u8 i = 0; i < NB_THREADS; i++)
+    {
+        atk[i].start = i * (DICT_SIZE / NB_THREADS);
+        atk[i].end = (i + 1) * (DICT_SIZE / NB_THREADS);
+        atk[i].sorted = decrypted;
+        atk[i].unsorted = encrypted;
+        for (u8 j = 0; j < 3; j++)
+        {
+            atk[i].m[j] = m2[j];
+            atk[i].c[j] = c2[j];
         }
-        pthread_create(tid2 + i, NULL, thread_func2, rsch + i);
+        pthread_create(tid2 + i, NULL, handle2, atk + i);
     }
-
-    for (u8 i = 0; i < NB_THREADS; i++) {
+    for (u8 i = 0; i < NB_THREADS; i++)
+    {
         pthread_join(tid2[i], NULL);
     }
-
-    free(rsch);
     free(tid2);
-
-    free(tmp);
-    free(clears);
-    free(ciphers);
+    free(atk);
+    free(decrypted);
+    free(encrypted);
 }

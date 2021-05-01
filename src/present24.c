@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
                 printf("\tKey:\t %02x%02x%02x\n", k_reg[0], k_reg[1], k_reg[2]);
 
                 generate_round_keys(k_reg, rk);
-                u8 *m = PRESENT24_encrypt(c, rk);
+                u8 *m = PRESENT24_decrypt(c, rk);
                 printf("\nOutput message:\t %02x%02x%02x\n", m[0], m[1], m[2]);
             }
         }
@@ -86,15 +86,16 @@ int main(int argc, char **argv) {
             if (check_args(argv[2]) == 0 && check_args(argv[3]) == 0 &&
                 check_args(argv[4]) == 0 && check_args(argv[5]) == 0)
             {
+                struct timespec before, after;
                 i32 a2 = strtol(argv[2], NULL, 16);
                 i32 a3 = strtol(argv[3], NULL, 16);
                 i32 a4 = strtol(argv[4], NULL, 16);
                 i32 a5 = strtol(argv[5], NULL, 16);
-                u8 NB_THREADS = 4;
+                size_t NB_THREADS = 4;
 
                 if (argc == 8) {
                     if (!strcmp(argv[6], "-t")) {
-                        i8 a7 = atoi(argv[7]);
+                        size_t a7 = atoi(argv[7]);
                         if (a7 < 1) {
                             warn("Invalid number of threads, running with default (4)");
                         }
@@ -134,14 +135,12 @@ int main(int argc, char **argv) {
                 printf("\tMessage 2: %02x%02x%02x | ", m2[0], m2[1], m2[2]);
                 printf("Cipher 2:  %02x%02x%02x\n", c2[0], c2[1], c2[2]);
 
-                struct timespec before, after;
                 clock_gettime(CLOCK_MONOTONIC_RAW, &before);
                 PRESENT24_attack(m1, c1, m2, c2, NB_THREADS);
                 clock_gettime(CLOCK_MONOTONIC_RAW, &after);
 
-                f64 time_taken = (after.tv_sec - before.tv_sec)
-                    + (after.tv_nsec - before.tv_nsec) / 1E9;
-                printf("\nAttack performed in %.3lf secs\n", time_taken);
+                printf("\nAttack ");
+                measure_time(&before, &after);
             }
         }
         else {
