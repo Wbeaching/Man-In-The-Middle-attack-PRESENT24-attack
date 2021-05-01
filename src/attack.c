@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
@@ -233,4 +234,62 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     free(atk);
     free(decrypted);
     free(encrypted);
+}
+
+void main_attack(i32 numb_args, i8 **args) {
+     struct timespec before, after;
+    i32 a2 = strtol(args[2], NULL, 16);
+    i32 a3 = strtol(args[3], NULL, 16);
+    i32 a4 = strtol(args[4], NULL, 16);
+    i32 a5 = strtol(args[5], NULL, 16);
+    size_t NB_THREADS = 4;
+
+    if (numb_args == 8) {
+        if (!strcmp(args[6], "-t")) {
+            size_t a7 = atoi(args[7]);
+            if (a7 < 1) {
+                warn("Invalid number of threads, running with default (4)");
+            }
+            else {
+                NB_THREADS = a7;
+            }
+        }
+    }
+
+    u8 m1[3] = {
+        (a2 & 0x00ff0000) >> 16,
+        (a2 & 0x0000ff00) >> 8,
+        (a2 & 0x000000ff)
+    };
+
+    u8 c1[3] = {
+        (a3 & 0x00ff0000) >> 16,
+        (a3 & 0x0000ff00) >> 8,
+        (a3 & 0x000000ff)
+    };
+
+    u8 m2[3] = {
+        (a4 & 0x00ff0000) >> 16,
+        (a4 & 0x0000ff00) >> 8,
+        (a4 & 0x000000ff)
+    };
+
+    u8 c2[3] = {
+        (a5 & 0x00ff0000) >> 16,
+        (a5 & 0x0000ff00) >> 8,
+        (a5 & 0x000000ff)
+    };
+
+    printf("\nStarting man in the middle attack on 2PRESENT24 with:\n");
+    printf("\tMessage 1: %02x%02x%02x | ", m1[0], m1[1], m1[2]);
+    printf("Cipher 1:  %02x%02x%02x\n", c1[0], c1[1], c1[2]);
+    printf("\tMessage 2: %02x%02x%02x | ", m2[0], m2[1], m2[2]);
+    printf("Cipher 2:  %02x%02x%02x\n", c2[0], c2[1], c2[2]);
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+    PRESENT24_attack(m1, c1, m2, c2, NB_THREADS);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+
+    printf("\nAttack ");
+    measure_time(&before, &after);
 }

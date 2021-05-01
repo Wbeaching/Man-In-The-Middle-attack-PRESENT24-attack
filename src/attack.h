@@ -21,3 +21,4 @@ typedef struct {
 } attack_t;
 
 void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS);
+void main_attack(i32 numb_args, i8 **args);
