@@ -4,13 +4,25 @@ CFLAGS = -std=c99 -Wall -Wextra -pedantic -g3
 LFLAGS = -pthread
 OFLAGS = -O3 -march=native -mtune=native -funroll-loops -faggressive-loop-optimizations -fdelete-null-pointer-checks -finline-functions -floop-interchange -floop-unroll-and-jam -fpeel-loops -fsplit-loops -ftree-loop-vectorize -ftree-slp-vectorize
 FILES = src/*.c
-AR = PRESENT24
+AR = MOLINATTI_DOS-SANTOS
 
 # Rules
 all: present24
 
 present24: $(FILES)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OFLAGS) $(FILES) -o $@
+
+encrypt: present24
+	./present24 -e 000000 000000
+
+decrypt: present24
+	./present24 -d bb57e6 000000
+
+attack_theophile: present24
+	./present24 -a ce157a 0ed3f0 4181c8 650e1e -t 4
+
+attack_gabriel: present24
+	./present24 -a b404cc 23714f 576dcf 45051b -t 4
 
 archive:
 	@mkdir -p $(AR)

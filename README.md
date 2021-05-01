@@ -1,4 +1,5 @@
 # IN603 - Cryptography: Man in the middle attack on a block cipher
+by Theophile Molinatti and Gabriel Dos Santos
 
 ## PRESENT24 block cipher specifications
 The block cipher implemented in this project is a scaled-down version of
@@ -35,5 +36,15 @@ You can then run the program with one of the following options:
 ```
 - With `-a`, you need to provide two 24 bits messages as well as two 24 bits ciphers, like so
 ```
-./present24 -a MESSAGE1 CIPHER1 MESSAGE2 CIPHER2
+./present24 -a MESSAGE1 CIPHER1 MESSAGE2 CIPHER2 [-t NB_THREADS]
 ```
+If the `-t` option is not specified, the program will run with 4 threads by default.
+
+The Makefile comes with pre-made commands to **test** the application. These are the following:
+- `make encrypt` runs PRESENT24 on the 4 test vectors provided in the subject.
+- `make decrypt` runs PRESENT24 on the 4 test vectors provided in the subject.
+- `make attack_theophile` runs the attack on PRESENT24 with Theophile's pairs of plain/cipher texts.
+- `make attack_gabriel` runs the attack on PRESENT24 with Gabriel's pairs of plain/cipher texts.
+
+Feel free to run it with values of your own!
+

@@ -236,21 +236,27 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     free(encrypted);
 }
 
-void main_attack(i32 numb_args, i8 **args) {
-     struct timespec before, after;
+void main_attack(i32 numb_args, i8 **args)
+{
+    struct timespec before, after;
     i32 a2 = strtol(args[2], NULL, 16);
     i32 a3 = strtol(args[3], NULL, 16);
     i32 a4 = strtol(args[4], NULL, 16);
     i32 a5 = strtol(args[5], NULL, 16);
     size_t NB_THREADS = 4;
 
-    if (numb_args == 8) {
-        if (!strcmp(args[6], "-t")) {
+    if (numb_args == 8)
+    {
+        if (!strcmp(args[6], "-t"))
+        {
             size_t a7 = atoi(args[7]);
-            if (a7 < 1) {
-                warn("Invalid number of threads, running with default (4)");
+            if (a7 < 1)
+            {
+                warn();
+                printf("Invalid number of threads, running with default (4)");
             }
-            else {
+            else
+            {
                 NB_THREADS = a7;
             }
         }
