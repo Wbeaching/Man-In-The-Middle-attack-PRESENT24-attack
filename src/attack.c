@@ -68,7 +68,8 @@ void valid_key(u64 encrypted, u64 decrypted, u8 m2[3], u8 c2[3])
 
     if ((res2[0] == c2[0]) && (res2[1] == c2[1]) && (res2[2] == c2[2]))
     {
-        printf("\nFound pair!\n    k1: %02x%02x%02x | k2: %02x%02x%02x\n",
+        info();
+        printf("\x1b[32mFound pair!\x1b[0m\n    k1: %02x%02x%02x | k2: %02x%02x%02x\n\n",
             k3[0], k3[1], k3[2],
             k4[0], k4[1], k4[2]
         );
@@ -167,16 +168,20 @@ void *generate_dictionaries(void *arg)
 
 void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
 {
+    // Declarations for measuring time
     struct timespec before, after;
 
+    // Allocations
     u64 *decrypted = malloc(sizeof(u64) * DICT_SIZE);
     u64 *encrypted = malloc(sizeof(u64) * DICT_SIZE);
     pthread_t *tid1 = malloc(sizeof(pthread_t) * NB_THREADS);
     dictionary_t *dict = malloc(sizeof(dictionary_t) * NB_THREADS);
     fn_ptr handle1 = generate_dictionaries;
 
-    printf("\nAttack parallelized with %lu threads\n", NB_THREADS);
-    printf("Generating dictionaries... ");
+
+    info(); printf("Attack parallelized with %lu threads\n", NB_THREADS);
+    info(); printf("Generating dictionaries... ");
+    // Parallelized dictionary generation
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
     for (u8 i = 0; i < NB_THREADS; i++)
     {
@@ -200,8 +205,9 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     free(dict);
     free(tid1);
 
+    // Sorting both dictionaries for faster lookup
     u64 *tmp = malloc(sizeof(u64) * DICT_SIZE);
-    printf("Sorting dictionaries... ");
+    info(); printf("Sorting dictionaries... ");
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
     radix_sort(decrypted, tmp, DICT_SIZE);
     radix_sort(encrypted, tmp, DICT_SIZE);
@@ -209,10 +215,12 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     measure_time(&before, &after);
     free(tmp);
 
+    // Performing attack on dictionaries
     pthread_t *tid2 = malloc(sizeof(pthread_t) * NB_THREADS);
     attack_t *atk = malloc(sizeof(attack_t) * NB_THREADS);
     fn_ptr handle2 = attack_dictionaries;
-    printf("Checking for a valid key pair...\n");
+    info(); printf("Checking for a valid key pair...\n");
+    clock_gettime(CLOCK_MONOTONIC_RAW, &before);
     for (u8 i = 0; i < NB_THREADS; i++)
     {
         atk[i].start = i * (DICT_SIZE / NB_THREADS);
@@ -230,6 +238,10 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     {
         pthread_join(tid2[i], NULL);
     }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+    info(); printf("Attack ");
+    measure_time(&before, &after);
+
     free(tid2);
     free(atk);
     free(decrypted);
@@ -250,10 +262,10 @@ void main_attack(i32 numb_args, i8 **args)
         if (!strcmp(args[6], "-t"))
         {
             size_t a7 = atoi(args[7]);
-            if (a7 < 1)
+            if (a7 < 1 || a7 > 1025)
             {
                 warn();
-                printf("Invalid number of threads, running with default (4)");
+                printf("Invalid number of threads, running with default (4)\n");
             }
             else
             {
@@ -286,16 +298,16 @@ void main_attack(i32 numb_args, i8 **args)
         (a5 & 0x000000ff)
     };
 
-    printf("\nStarting man in the middle attack on 2PRESENT24 with:\n");
-    printf("\tMessage 1: %02x%02x%02x | ", m1[0], m1[1], m1[2]);
+    printf("\x1b[1mMan In The Middle attack on 2PRESENT24 with:\x1b[0m\n");
+    printf("    Message 1: %02x%02x%02x | ", m1[0], m1[1], m1[2]);
     printf("Cipher 1:  %02x%02x%02x\n", c1[0], c1[1], c1[2]);
-    printf("\tMessage 2: %02x%02x%02x | ", m2[0], m2[1], m2[2]);
-    printf("Cipher 2:  %02x%02x%02x\n", c2[0], c2[1], c2[2]);
+    printf("    Message 2: %02x%02x%02x | ", m2[0], m2[1], m2[2]);
+    printf("Cipher 2:  %02x%02x%02x\n\n", c2[0], c2[1], c2[2]);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
     PRESENT24_attack(m1, c1, m2, c2, NB_THREADS);
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
 
-    printf("\nAttack ");
-    measure_time(&before, &after);
+    f64 time_taken = (after.tv_sec - before.tv_sec) + (after.tv_nsec - before.tv_nsec) / 1E9;
+    info(); printf("Program run in \x1b[1m%.3lf secs\x1b[0m\n", time_taken);
 }

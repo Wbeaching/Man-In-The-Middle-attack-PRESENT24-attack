@@ -7,25 +7,25 @@
 inline
 void info()
 {
-    printf("\033[1m[INFO]:\x1b[0m    ");
+    printf("\x1b[1m[INFO]:\x1b[0m ");
 }
 
 inline
 void warn()
 {
-    printf("\033[1m\x1b[33m[WARNING]:\x1b[0m ");
+    printf("\x1b[1m\x1b[33m[WARNING]:\x1b[0m ");
 }
 
 inline
 void err(size_t nb_err)
 {
-    printf("\033[1m\x1b[31m[ERROR %lu]:\x1b[0m ", nb_err);
+    printf("\x1b[1m\x1b[31m[ERROR %lu]:\x1b[0m ", nb_err);
 }
 
 inline
 void measure_time(struct timespec *before, struct timespec *after) {
     f64 time_taken = (after->tv_sec - before->tv_sec) + (after->tv_nsec - before->tv_nsec) / 1E9;
-    printf("done in %.3lf secs\n", time_taken);
+    printf("done in \x1b[1m%.3lf secs\x1b[0m\n", time_taken);
 }
 
 inline
