@@ -14,14 +14,20 @@ present24: $(FILES)
 
 encrypt: present24
 	./present24 -e 000000 000000
+	@echo -e ''
 	./present24 -e ffffff 000000
+	@echo -e ''
 	./present24 -e 000000 ffffff
+	@echo -e ''
 	./present24 -e f955b9 d1bd2d
 
 decrypt: present24
 	./present24 -d bb57e6 000000
+	@echo -e ''
 	./present24 -d 739293 000000
+	@echo -e ''
 	./present24 -d 1b56ce ffffff
+	@echo -e ''
 	./present24 -d 47a929 d1bd2d
 
 attack_theophile: present24
