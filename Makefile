@@ -13,28 +13,30 @@ present24: $(FILES)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OFLAGS) $(FILES) -o $@
 
 encrypt: present24
-	./present24 -e 000000 000000
+	@echo "\033[1mRunning encryption with test vectors\033[0m\n"
+	@./present24 -e 000000 000000
 	@echo -e ''
-	./present24 -e ffffff 000000
+	@./present24 -e ffffff 000000
 	@echo -e ''
-	./present24 -e 000000 ffffff
+	@./present24 -e 000000 ffffff
 	@echo -e ''
-	./present24 -e f955b9 d1bd2d
+	@./present24 -e f955b9 d1bd2d
 
 decrypt: present24
-	./present24 -d bb57e6 000000
+	@echo "\033[1mRunning decryption with test vectors\033[0m\n"
+	@./present24 -d bb57e6 000000
 	@echo -e ''
-	./present24 -d 739293 000000
+	@./present24 -d 739293 000000
 	@echo -e ''
-	./present24 -d 1b56ce ffffff
+	@./present24 -d 1b56ce ffffff
 	@echo -e ''
-	./present24 -d 47a929 d1bd2d
+	@./present24 -d 47a929 d1bd2d
 
 attack_theophile: present24
-	./present24 -a ce157a 0ed3f0 4181c8 650e1e -t 4
+	@./present24 -a ce157a 0ed3f0 4181c8 650e1e -t 4
 
 attack_gabriel: present24
-	./present24 -a b404cc 23714f 576dcf 45051b -t 4
+	@./present24 -a b404cc 23714f 576dcf 45051b -t 4
 
 archive:
 	@mkdir -p $(AR)

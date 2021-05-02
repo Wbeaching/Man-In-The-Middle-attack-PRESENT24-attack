@@ -90,11 +90,11 @@ void main_decrypt(i8 *cipher, i8 *key)
         0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    printf("Starting PRESENT24 decryption with:\n");
+    printf("PRESENT24 decryption with:\n");
     printf("    Cipher: %02x%02x%02x\n", c[0], c[1], c[2]);
     printf("    Key:    %02x%02x%02x\n", k_reg[0], k_reg[1], k_reg[2]);
 
     generate_round_keys(k_reg, rk);
     u8 *m = PRESENT24_decrypt(c, rk);
-    printf("\nOutput message: %02x%02x%02x\n", m[0], m[1], m[2]);
+    printf("Output message: %02x%02x%02x\n", m[0], m[1], m[2]);
 }

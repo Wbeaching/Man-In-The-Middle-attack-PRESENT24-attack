@@ -90,11 +90,11 @@ void main_encrypt(i8 *message, i8 *key)
         0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    printf("Starting PRESENT24 encryption with:\n");
+    printf("PRESENT24 encryption with:\n");
     printf("    Message: %02x%02x%02x\n", m[0], m[1], m[2]);
     printf("    Key:     %02x%02x%02x\n", k_reg[0], k_reg[1], k_reg[2]);
 
     generate_round_keys(k_reg, rk);
     u8 *c = PRESENT24_encrypt(m, rk);
-    printf("\nOutput cipher: %02x%02x%02x\n", c[0], c[1], c[2]);
+    printf("Output cipher: %02x%02x%02x\n", c[0], c[1], c[2]);
 }
