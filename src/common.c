@@ -43,7 +43,7 @@ u8 check_args(i8 *arg)
         if (arg[i] < 47 || (arg[i] > 57 && arg[i] < 64) || (arg[i] > 70 && arg[i] < 96) || arg[i] > 102)
         {
             err(3);
-            printf("Invalid character `%c` in argument `%s`", arg[i], arg);
+            printf("Invalid character `%c` in argument `%s`\n", arg[i], arg);
             return 3;
         }
     }
