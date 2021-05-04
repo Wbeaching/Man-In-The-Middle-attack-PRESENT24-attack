@@ -2,49 +2,35 @@
 #include <string.h>
 
 #include "common.h"
+#include "err.h"
 #include "encrypt.h"
 
 inline
-void info()
-{
-    printf("\x1b[1m[INFO]:\x1b[0m ");
-}
-
-inline
-void warn()
-{
-    printf("\x1b[1m\x1b[33m[WARNING]:\x1b[0m ");
-}
-
-inline
-void err(size_t nb_err)
-{
-    printf("\x1b[1m\x1b[31m[ERROR %lu]:\x1b[0m ", nb_err);
-}
-
-inline
-void measure_time(struct timespec *before, struct timespec *after) {
-    f64 time_taken = (after->tv_sec - before->tv_sec) + (after->tv_nsec - before->tv_nsec) / 1E9;
-    printf("done in \x1b[1m%.3lf secs\x1b[0m\n", time_taken);
+f64 measure_time(struct timespec *before, struct timespec *after) {
+    return (after->tv_sec - before->tv_sec) + (after->tv_nsec - before->tv_nsec) / 1E9;
 }
 
 inline
 u8 check_args(i8 *arg)
 {
+    // Check that the length of the argument is correct
     if (strlen(arg) > 6)
     {
-        err(2);
+        err(5);
         printf("Invalid size for argument `%s`\n", arg);
-        return 2;
+        return 5;
     }
 
+    // Iterate over the characters of the argument
     for (size_t i = 0; i < strlen(arg); i++)
     {
-        if (arg[i] < 47 || (arg[i] > 57 && arg[i] < 64) || (arg[i] > 70 && arg[i] < 96) || arg[i] > 102)
+        // Check that the argument is a valid hexadecimal value
+        if (arg[i] < 47 || (arg[i] > 57 && arg[i] < 64) ||
+            (arg[i] > 70 && arg[i] < 96) || arg[i] > 102)
         {
-            err(3);
+            err(6);
             printf("Invalid character `%c` in argument `%s`\n", arg[i], arg);
-            return 3;
+            return 6;
         }
     }
 
@@ -54,6 +40,7 @@ u8 check_args(i8 *arg)
 inline
 void generate_round_keys(u8 key_reg[10], u8 round_key[11][3])
 {
+    // Declare a temporary register that will hold the shifted key register
     u8 shifted_reg[10];
     key_reg[3] = 0;
     key_reg[4] = 0;
@@ -63,6 +50,7 @@ void generate_round_keys(u8 key_reg[10], u8 round_key[11][3])
     key_reg[8] = 0;
     key_reg[9] = 0;
 
+    // Perform the 11 rounds of key generation
     for (u8 i = 0; i < 11; i++)
     {
         // Update the round key
