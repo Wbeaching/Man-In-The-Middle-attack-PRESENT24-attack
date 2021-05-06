@@ -55,7 +55,7 @@ void radix_sort(u64 *restrict arr, u64 *restrict tmp, size_t n)
 }
 
 static
-void valid_key(u64 encrypted, u64 decrypted, u8 m2[3], u8 c2[3])
+void verify_keys(u64 encrypted, u64 decrypted, u8 m2[3], u8 c2[3])
 {
     u8  k1[10], k2[10], rk1[11][3], rk2[11][3], tmp_m2[3];
 
@@ -97,21 +97,21 @@ i64 binary_search(u64 *dict, i64 lo, i64 hi, u64 target, u8 m2[3], u8 c2[3])
         // Compute the middle index
         i64 mid = lo + (hi - lo) / 2;
 
-        // If the target is equal to dict[mid], thers is a collision
+        // If the target is equal to dict[mid], there is a collision
         if ((target & MASK_T64) == (dict[mid] & MASK_T64))
         {
             // Check for possible collisions around the found target
             i64 cur = mid - 1;
             while ((cur >= lo) && ((target & MASK_T64) == (dict[cur] & MASK_T64)))
             {
-                valid_key(target, dict[cur], m2, c2);
+                verify_keys(target, dict[cur], m2, c2);
                 cur--;
             }
 
             cur = mid + 1;
             while ((cur <= hi) && ((target & MASK_T64) == (dict[cur] & MASK_T64)))
             {
-                valid_key(target, dict[cur], m2, c2);
+                verify_keys(target, dict[cur], m2, c2);
                 cur++;
             }
 
@@ -158,7 +158,7 @@ void *attack_dictionaries(void *arg)
         // the pair of keys (k1, k2) is valid
         if (index != -1)
         {
-            valid_key(atk->encrypted[i], atk->decrypted[index], atk->m, atk->c);
+            verify_keys(atk->encrypted[i], atk->decrypted[index], atk->m, atk->c);
         }
     }
 
@@ -360,10 +360,18 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     u64 *encrypted = malloc(sizeof(u64) * DICT_SIZE);
     u64 *decrypted = malloc(sizeof(u64) * DICT_SIZE);
 
+#if __linux__
     info(); printf("Generating dictionaries... ");
+#else
+    info(); printf("Generating dictionaries\n");
+#endif
     dictionary_part(encrypted, decrypted, m1, c1, NB_THREADS);
 
+#if __linux__
     info(); printf("Sorting dictionaries... ");
+#else
+    info(); printf("Sorting dictionaries\n");
+#endif
     sorting_part(encrypted, decrypted);
 
     info(); printf("Searching for a valid pair of keys...\n");
