@@ -14,7 +14,7 @@
 typedef void *(*fn_ptr)(void *arg);
 
 static inline
-void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift)
+void radix_sort_pass(u64 *restrict src, u64 *restrict dst, size_t n, size_t shift)
 {
     size_t index[256] = { 0 }, next_index = 0, count;
 
@@ -40,7 +40,7 @@ void radix_sort_pass(u64 *src, u64 *dst, size_t n, size_t shift)
 }
 
 static inline
-void radix_sort(u64 *arr, u64 *tmp, size_t n)
+void radix_sort(u64 *restrict arr, u64 *restrict tmp, size_t n)
 {
     // Perform 3 pass on the array (8 bits evaluated and counted per pass)
     radix_sort_pass(arr, tmp, n, 0 * 8);
@@ -57,8 +57,6 @@ void radix_sort(u64 *arr, u64 *tmp, size_t n)
 static
 void valid_key(u64 encrypted, u64 decrypted, u8 m2[3], u8 c2[3])
 {
-    // Declare the needed key registers, round key arrays
-    // and a temporary copy of m2
     u8  k1[10], k2[10], rk1[11][3], rk2[11][3], tmp_m2[3];
 
     // Initialize the key registers with the master keys and copy m2 into tmp_m2
@@ -93,13 +91,13 @@ void valid_key(u64 encrypted, u64 decrypted, u8 m2[3], u8 c2[3])
 static
 i64 binary_search(u64 *dict, i64 lo, i64 hi, u64 target, u8 m2[3], u8 c2[3])
 {
-    // Check that hi index is greater than lo index
+    // Check that high index is greater than low index
     if (hi > lo)
     {
         // Compute the middle index
         i64 mid = lo + (hi - lo) / 2;
 
-        // If the target is equal to dict[mid], a collision is found
+        // If the target is equal to dict[mid], thers is a collision
         if ((target & MASK_T64) == (dict[mid] & MASK_T64))
         {
             // Check for possible collisions around the found target
@@ -232,7 +230,9 @@ void dictionary_part(
     fn_ptr handle1 = generate_dictionaries;
 
     // Start time measurement for the dictionary generation
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+#endif
 
     // Initialize dictionary structure and start threads
     for (u8 i = 0; i < NB_THREADS; i++)
@@ -256,9 +256,11 @@ void dictionary_part(
     }
 
     // Stop time measurement for the dictionary generation
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
     // Print time taken to terminal
     printf("done in %.3lf secs\n", measure_time(&before, &after));
+#endif
 
     // Free the threads and dictionary structure
     free(dict);
@@ -275,16 +277,20 @@ void sorting_part(u64 *encrypted, u64 *decrypted)
     u64 *tmp = malloc(sizeof(u64) * DICT_SIZE);
 
     // Start time measurement for the sorting part
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+#endif
 
     // Sorting both dictionaries for faster lookup
     radix_sort(decrypted, tmp, DICT_SIZE);
     radix_sort(encrypted, tmp, DICT_SIZE);
 
     // Stop time measurement for the sorting part
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
     // Print time taken to terminal
     printf("done in %.3lf secs\n", measure_time(&before, &after));
+#endif
 
     // Free the temporary array
     free(tmp);
@@ -309,7 +315,9 @@ void attack_part(
     fn_ptr handle2 = attack_dictionaries;
 
     // Start time measurement for the attack part
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+#endif
 
     // Initialize attaack structure and start threads
     for (u8 i = 0; i < NB_THREADS; i++)
@@ -333,9 +341,11 @@ void attack_part(
     }
 
     // Stop time measurement for the attack part
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
     // Print time taken to terminal
     info(); printf("Attack finished in %.3lf secs\n", measure_time(&before, &after));
+#endif
 
     // Free threads and attack structure
     free(tid2);
@@ -356,7 +366,7 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     info(); printf("Sorting dictionaries... ");
     sorting_part(encrypted, decrypted);
 
-    info(); printf("Checking for a valid pair of keys...\n");
+    info(); printf("Searching for a valid pair of keys...\n");
     attack_part(encrypted, decrypted, m2, c2, NB_THREADS);
 
     // Free arrays
@@ -424,9 +434,13 @@ void main_attack(i32 numb_args, i8 **args)
     printf("    Message 2: %02x%02x%02x | ", m2[0], m2[1], m2[2]);
     printf("Cipher 2:  %02x%02x%02x\n\n", c2[0], c2[1], c2[2]);
 
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+#endif
     PRESENT24_attack(m1, c1, m2, c2, NB_THREADS);
+#ifdef __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
 
     info(); printf("Program run in \x1b[1m%.3lf secs\x1b[0m\n", measure_time(&before, &after));
+#endif
 }
