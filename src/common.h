@@ -1,6 +1,5 @@
 #pragma once
 
-#include <bits/types/struct_timespec.h>
 #include <time.h>
 
 #include "types.h"

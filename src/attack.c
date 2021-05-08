@@ -219,8 +219,9 @@ void dictionary_part(
     u8 c1[3],
     size_t NB_THREADS)
 {
-    // Declare for measuring time
+#if __linux__
     struct timespec before, after;
+#endif
 
     // Allocate threads and dictionary structure
     pthread_t *tid1 = malloc(sizeof(pthread_t) * NB_THREADS);
@@ -270,8 +271,9 @@ void dictionary_part(
 static inline
 void sorting_part(u64 *encrypted, u64 *decrypted)
 {
-    // Declare for measuring time
+#if  __linux__
     struct timespec before, after;
+#endif
 
     // Allocate a temporary array for the radix sort
     u64 *tmp = malloc(sizeof(u64) * DICT_SIZE);
@@ -282,8 +284,8 @@ void sorting_part(u64 *encrypted, u64 *decrypted)
 #endif
 
     // Sorting both dictionaries for faster lookup
-    radix_sort(decrypted, tmp, DICT_SIZE);
     radix_sort(encrypted, tmp, DICT_SIZE);
+    radix_sort(decrypted, tmp, DICT_SIZE);
 
     // Stop time measurement for the sorting part
 #if __linux__
@@ -304,8 +306,9 @@ void attack_part(
     u8 c2[3],
     size_t NB_THREADS)
 {
-    // Declare for measuring time
+#if __linux__
     struct timespec before, after;
+#endif
 
     // Allocate threads and attack structure
     pthread_t *tid2 = malloc(sizeof(pthread_t) * NB_THREADS);
@@ -352,9 +355,30 @@ void attack_part(
     free(atk);
 }
 
+
+/**
+ * Perfoms a Man In The Middle Attack on the 2PRESENT24 block cipher.
+ *
+ * For every possible key, puts the results of the encryption of m1 and
+ * the decryption of c1 in arrays (dictionaries).
+ * Sorts both of these using radix sort.
+ * Iterates over one of the arrays and looks for a matching result in the other
+ * using a recursive binary search. If a collision is found (i.e the binary
+ * search returns a valid index), a check is performed for pair of keys
+ * k1 and k2 (used to encrypt/decrypt the matching texts) with m2 and c2.
+ * The check by encrypting m2. The result is then re-encrypted, if it matches
+ * with c2, then the pair of keys k1 and k2 is valid.
+ *
+ * @param m1 The message to use to generate the encrypt dictionary.
+ * @param c1 The cipher to use to generate the decrypt dictionary.
+ * @param m2 The message used to check that a pair of keys k1 and k2 is valid.
+ * @param c2 The cipher used to check that a pair of keys k1 and k2 is valid.
+ * @param rk NB_THREADS The number of threads to use to parallelize the attack.
+ */
+static inline
 void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
 {
-    info(); printf("Attack parallelized with %lu threads\n", NB_THREADS);
+    info(); printf("Attacking in parallel with %lu threads\n", NB_THREADS);
 
     // Allocate arrays
     u64 *encrypted = malloc(sizeof(u64) * DICT_SIZE);
@@ -382,9 +406,12 @@ void PRESENT24_attack(u8 m1[3], u8 c1[3], u8 m2[3], u8 c2[3], size_t NB_THREADS)
     free(encrypted);
 }
 
+inline
 void main_attack(i32 numb_args, i8 **args)
 {
+#if __linux__
     struct timespec before, after;
+#endif
     i32 a2 = strtol(args[2], NULL, 16);
     i32 a3 = strtol(args[3], NULL, 16);
     i32 a4 = strtol(args[4], NULL, 16);
