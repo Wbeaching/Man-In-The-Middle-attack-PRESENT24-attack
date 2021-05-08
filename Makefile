@@ -15,21 +15,21 @@ present24: $(FILES)
 encrypt: present24
 	@echo "\033[1mRunning encryption with test vectors\033[0m\n"
 	@./present24 -e 000000 000000
-	@echo -e ''
+	@echo ''
 	@./present24 -e ffffff 000000
-	@echo -e ''
+	@echo ''
 	@./present24 -e 000000 ffffff
-	@echo -e ''
+	@echo ''
 	@./present24 -e f955b9 d1bd2d
 
 decrypt: present24
 	@echo "\033[1mRunning decryption with test vectors\033[0m\n"
 	@./present24 -d bb57e6 000000
-	@echo -e ''
+	@echo ''
 	@./present24 -d 739293 000000
-	@echo -e ''
+	@echo ''
 	@./present24 -d 1b56ce ffffff
-	@echo -e ''
+	@echo ''
 	@./present24 -d 47a929 d1bd2d
 
 attack_theophile: present24

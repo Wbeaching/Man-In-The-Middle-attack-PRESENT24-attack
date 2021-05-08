@@ -117,5 +117,5 @@ void main_encrypt(i8 *message, i8 *key)
     // Perform the encryption
     PRESENT24_encrypt(m, rk);
 
-    printf("Output cipher: %02x%02x%02x\n", m[0], m[1], m[2]);
+    printf("    Cipher:  %02x%02x%02x\n", m[0], m[1], m[2]);
 }

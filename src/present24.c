@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         err(ERR_INVALID_RUN_CMD);
-        printf("USAGE: %s -[e | d | a]\n", argv[0]);
+        printf("Usage: %s -[e | d | a]\n", argv[0]);
         return 1;
     }
 
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
         else
         {
             err(ERR_IVALID_ENCRYPTION_CMD);
-            printf("USAGE: %s -e MESSAGE KEY\n", argv[0]);
+            printf("Usage: %s -e MESSAGE KEY\n", argv[0]);
             return 2;
         }
     }
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
         else
         {
             err(ERR_INVALID_DECRYPTION_CMD);
-            printf("USAGE: %s -d CIPHER KEY\n", argv[0]);
+            printf("Usage: %s -d CIPHER KEY\n", argv[0]);
             return 3;
         }
     }
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     else if (!strcmp(argv[1], "-a"))
     {
         // Check that the number of argument is valid
-        if (argc > 5)
+        if (argc > 5 && argc < 9)
         {
             // Check that the arguments are valid before executing
             if (check_args(argv[2]) == 0 && check_args(argv[3]) == 0 &&
@@ -75,14 +75,14 @@ int main(int argc, char **argv)
         else
         {
             err(ERR_INVALID_ATTACK_CMD);
-            printf("USAGE: %s -a m1 c1 m2 c2\n", argv[0]);
+            printf("Usage: %s -a MESSAGE1 CIPHER1 MESSAGE2 CIPHER2 [-t NB_THREADS]\n", argv[0]);
             return 4;
         }
     }
     else
     {
         err(ERR_INVALID_OPTION);
-        printf("USAGE: %s -[e | d | a]\n", argv[0]);
+        printf("Usage: %s -[e | d | a]\n", argv[0]);
         return 1;
     }
 
