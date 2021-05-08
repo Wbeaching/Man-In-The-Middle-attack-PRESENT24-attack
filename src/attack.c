@@ -473,7 +473,7 @@ void main_attack(i32 numb_args, i8 **args)
     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
 #endif
     PRESENT24_attack(m1, c1, m2, c2, NB_THREADS);
-#ifdef __linux__
+#if __linux__
     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
 
     info(); printf("Program run in \x1b[1m%.3lf secs\x1b[0m\n", measure_time(&before, &after));

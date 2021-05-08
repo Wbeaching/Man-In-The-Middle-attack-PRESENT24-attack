@@ -55,30 +55,30 @@ void pbox_layer_decrypt(u8 m[3])
     }
 }
 
-void PRESENT24_decrypt(u8 cipher[3], u8 rk[11][3])
+void PRESENT24_decrypt(u8 c[3], u8 rk[11][3])
 {
     // XOR with 11th round key for the first round of decryption
     for (u8 i = 0; i < 3; i++)
     {
-        cipher[i] ^= rk[10][i];
+        c[i] ^= rk[10][i];
     }
 
     // 10 rounds of the decryption
     for (u8 i = 10; i > 0; i--)
     {
         // Perform the Permuation layer on the cipher
-        pbox_layer_decrypt(cipher);
+        pbox_layer_decrypt(c);
 
         // Perform the S-Box layer for every byte of the cipher
         for (u8 j = 0; j < 3; j++)
         {
-            cipher[j] = sbox_layer_decrypt(cipher[j]);
+            c[j] = sbox_layer_decrypt(c[j]);
         }
 
         // XOR round key with the cipher
         for (u8 j = 0; j < 3; j++)
         {
-            cipher[j] ^= rk[i - 1][j];
+            c[j] ^= rk[i - 1][j];
         }
     }
 }
