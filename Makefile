@@ -40,7 +40,7 @@ attack_gabriel: present24
 
 archive:
 	@mkdir -p $(AR)
-	@cp -r src/ Makefile README.md $(AR)
+	@cp -r src/ Makefile README.md Rapport.pdf Annexe_rapport.pdf $(AR)
 	@tar zcvf $(AR).tar.gz $(AR)
 	@rm -Rf $(AR)
 

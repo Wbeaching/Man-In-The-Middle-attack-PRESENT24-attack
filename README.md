@@ -17,9 +17,18 @@ The concept behind SPN ciphers is simple, each round is composed of three layers
 - A substitution to ensure confusion.
 - A permutation to ensure diffusion.
 
-The implementation of `PRESENT24` will perform ten rounds.
+This implementation of `PRESENT24` will perform eleven rounds.
 
 ## Usage
+Even though the application has been written to be able to run on any operating
+system, we **strongly** advise you to run it on a Linux-based OS (with kernel
+2.6.28 or higher).
+
+As the provided Makefile uses compiler-specific optimization flags, you will
+need to have the GNU C Compiler (`gcc`) installed on your system to able to
+compile the source code (version 7.0 or higher).
+
+
 To build the executable, please use the provided Makefile:
 ```
 make
